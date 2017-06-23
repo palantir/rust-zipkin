@@ -2,6 +2,7 @@
 name = "zipkin"
 version = "0.1.0"
 authors = ["Steven Fackler <sfackler@palantir.com>"]
+license = "Apache-2.0"
 
 [dependencies]
 data-encoding = "2.0.0-rc.1"
