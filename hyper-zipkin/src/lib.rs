@@ -52,7 +52,7 @@ header! {
 /// The `X-B3-Flags` header.
 ///
 /// Its value is always `1` if present, which indicates that the context is in
-/// debug mode. It corresponds to the `debug` field of a `TraceContext.
+/// debug mode. It corresponds to the `debug` field of a `TraceContext`.
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct XB3Flags;
 
