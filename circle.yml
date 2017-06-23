@@ -1,0 +1,17 @@
+machine:
+  pre:
+  - curl -sSf https://static.rust-lang.org/rustup.sh | sh -s -- -y --revision=1.18.0
+# https://github.com/rust-lang/cargo/issues/2078#issuecomment-263027534
+checkout:
+  post:
+  - git config --global --unset url.ssh://git@github.com:.insteadof
+dependencies:
+  override:
+  - cargo fetch
+  cache_directories:
+  - "~/.cargo"
+test:
+  override:
+  - cargo test -p zipkin
+  - cargo test -p hyper-zipkin
+  - cargo test -p hyper-zipkin --features serde
