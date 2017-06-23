@@ -6,11 +6,15 @@ A collection of crates to support the Zipkin distributed tracing system.
 
 ## zipkin
 
+[Documentation](https://docs.rs/zipkin)
+
 The zipkin crate defines Rust types corresponding to Zipkin's object schema, as
 well as a `Tracer` object which handles the heavy lifting of creating and
 recording Zipkin spans.
 
 ## hyper-zipkin
+
+[Documentation](https://docs.rs/hyper-zipkin)
 
 The hyper-zipkin crate defines Hyper header types corresponding to the standard
 headers used for propagation of Zipkin trace contexts thorough remote calls, as
