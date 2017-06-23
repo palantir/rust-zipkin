@@ -1,0 +1,11 @@
+[package]
+name = "zipkin"
+version = "0.1.0"
+authors = ["Steven Fackler <sfackler@palantir.com>"]
+
+[dependencies]
+data-encoding = "2.0.0-rc.1"
+log = "0.3"
+rand = "0.3"
+serde = { version = "1.0", optional = true, features = ["derive"] }
+thread-local-object = "0.1"

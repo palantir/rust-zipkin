@@ -1,0 +1,5 @@
+[workspace]
+members = [
+    "hyper-zipkin",
+    "zipkin"
+]

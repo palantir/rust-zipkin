@@ -1,0 +1,9 @@
+[package]
+name = "hyper-zipkin"
+version = "0.1.0"
+authors = ["Steven Fackler <sfackler@palantir.com>"]
+
+[dependencies]
+hyper = "0.10"
+
+zipkin = { path = "../zipkin" }
