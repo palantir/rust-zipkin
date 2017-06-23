@@ -22,6 +22,7 @@
 //! Zipkin format.
 //!
 //! [Zipkin]: http://zipkin.io/
+#![doc(html_root_url="https://docs.rs/zipkin/0.1.0")]
 #![warn(missing_docs)]
 extern crate data_encoding;
 extern crate rand;
