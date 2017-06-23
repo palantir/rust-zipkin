@@ -20,16 +20,18 @@ use std::error::Error;
 use std::fmt;
 use std::str::FromStr;
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+enum Inner {
+    Short([u8; 8]),
+    Long([u8; 16]),
+}
+
 /// The ID of a trace.
 ///
-/// Span IDs are either 8 or 16 bytes, and are serialized as hexadecimal
+/// Trace IDs are either 8 or 16 bytes, and are serialized as hexadecimal
 /// strings.
-// NB Eq impls are only derivable because non-extended values have zeroed buffer tails
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub struct TraceId {
-    buf: [u8; 16],
-    extended: bool,
-}
+pub struct TraceId(Inner);
 
 impl fmt::Display for TraceId {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
@@ -44,24 +46,25 @@ impl FromStr for TraceId {
     type Err = TraceIdParseError;
 
     fn from_str(s: &str) -> Result<TraceId, TraceIdParseError> {
-        let mut buf = [0; 16];
-        let extended = match HEXLOWER_PERMISSIVE.decode_len(s.len()) {
+        let inner = match HEXLOWER_PERMISSIVE.decode_len(s.len()) {
             Ok(8) => {
-                HEXLOWER_PERMISSIVE
-                    .decode_mut(s.as_bytes(), &mut buf[..8])
-                    .map_err(|e| TraceIdParseError(Some(e)))?;
-                false
-            }
-            Ok(16) => {
+                let mut buf = [0; 8];
                 HEXLOWER_PERMISSIVE
                     .decode_mut(s.as_bytes(), &mut buf)
                     .map_err(|e| TraceIdParseError(Some(e)))?;
-                true
+                Inner::Short(buf)
+            }
+            Ok(16) => {
+                let mut buf = [0; 16];
+                HEXLOWER_PERMISSIVE
+                    .decode_mut(s.as_bytes(), &mut buf)
+                    .map_err(|e| TraceIdParseError(Some(e)))?;
+                Inner::Long(buf)
             }
             _ => return Err(TraceIdParseError(None)),
         };
 
-        Ok(TraceId { buf, extended })
+        Ok(TraceId(inner))
     }
 }
 
@@ -78,31 +81,22 @@ impl Serialize for TraceId {
 impl TraceId {
     /// Returns the byte representation of the trace ID.
     pub fn bytes(&self) -> &[u8] {
-        if self.extended {
-            &self.buf
-        } else {
-            &self.buf[..8]
+        match self.0 {
+            Inner::Short(ref buf) => buf,
+            Inner::Long(ref buf) => buf,
         }
     }
 }
 
 impl From<[u8; 8]> for TraceId {
     fn from(bytes: [u8; 8]) -> TraceId {
-        let mut buf = [0; 16];
-        buf[..8].copy_from_slice(&bytes);
-        TraceId {
-            buf,
-            extended: false,
-        }
+        TraceId(Inner::Short(bytes))
     }
 }
 
 impl From<[u8; 16]> for TraceId {
     fn from(bytes: [u8; 16]) -> TraceId {
-        TraceId {
-            buf: bytes,
-            extended: true,
-        }
+        TraceId(Inner::Long(bytes))
     }
 }
 
