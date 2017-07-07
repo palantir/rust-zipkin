@@ -3,7 +3,7 @@ jobs:
   build:
     working_directory: ~/build
     docker:
-      - image: scorpil/rust:1.19
+      - image: jimmycuadra/rust:1.18.0
     steps:
       - checkout
       - restore_cache:
