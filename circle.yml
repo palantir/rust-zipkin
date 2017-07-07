@@ -1,17 +1,32 @@
-machine:
-  pre:
-  - curl -sSf https://static.rust-lang.org/rustup.sh | sh -s -- -y --revision=1.18.0
-# https://github.com/rust-lang/cargo/issues/2078#issuecomment-263027534
-checkout:
-  post:
-  - git config --global --unset url.ssh://git@github.com:.insteadof
-dependencies:
-  override:
-  - cargo fetch
-  cache_directories:
-  - "~/.cargo"
-test:
-  override:
-  - cargo test -p zipkin
-  - cargo test -p hyper-zipkin
-  - cargo test -p hyper-zipkin --features serde
+version: 2
+jobs:
+  build:
+    working_directory: ~/build
+    docker:
+      - image: scorpil/rust:1.19
+    steps:
+      - checkout
+      - restore_cache:
+          key: dot-cargo
+      - run:
+          name: fetch
+          command: cargo fetch
+      - save_cache:
+          key: dot-cargo-{{ epoch }}
+          paths:
+            - ~/.cargo
+      - restore_cache:
+          key: target-{{ checksum "Cargo.lock" }}
+      - run:
+          name: zipkin
+          command: cargo test -p zipkin
+      - run:
+          name: zipkin with features
+          command: cargo test -p zipkin --all-features
+      - run:
+          name: hyper-zipkin
+          command: cargo test -p hyper-zipkin
+      - save_cache:
+          key: target-{{ checksum "Cargo.lock" }}
+          paths:
+            - target
