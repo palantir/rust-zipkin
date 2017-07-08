@@ -8,24 +8,16 @@ jobs:
       - checkout
       - restore_cache:
           key: registry
-      - run:
-          name: Generate Lockfile
-          command: cargo generate-lockfile
+      - run: cargo generate-lockfile
       - save_cache:
           key: registry-{{ epoch }}
           paths:
             - ~/.cargo/registry/index
       - restore_cache:
           key: dependencies-{{ checksum "Cargo.lock" }}
-      - run:
-          name: Test zipkin
-          command: cargo test -p zipkin
-      - run:
-          name: Test zipkin With Features
-          command: cargo test -p zipkin --all-features
-      - run:
-          name: Test hyper-zipkin
-          command: cargo test -p hyper-zipkin
+      - run: cargo test -p zipkin
+      - run: cargo test -p zipkin --all-features
+      - run: cargo test -p hyper-zipkin
       - save_cache:
           key: dependencies-{{ checksum "Cargo.lock" }}
           paths:
