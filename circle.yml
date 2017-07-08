@@ -9,7 +9,7 @@ jobs:
       - restore_cache:
           key: registry
       - run:
-          name: fetch
+          name: Generate Lockfile
           command: cargo generate-lockfile
       - save_cache:
           key: registry-{{ epoch }}
