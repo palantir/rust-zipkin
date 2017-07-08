@@ -7,26 +7,27 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          key: dot-cargo
+          key: registry
       - run:
           name: fetch
-          command: cargo fetch
+          command: cargo generate-lockfile
       - save_cache:
-          key: dot-cargo-{{ epoch }}
+          key: registry-{{ epoch }}
           paths:
-            - ~/.cargo
+            - ~/.cargo/registry/index
       - restore_cache:
-          key: target-{{ checksum "Cargo.lock" }}
+          key: dependencies-{{ checksum "Cargo.lock" }}
       - run:
-          name: zipkin
+          name: Test zipkin
           command: cargo test -p zipkin
       - run:
-          name: zipkin with features
+          name: Test zipkin With Features
           command: cargo test -p zipkin --all-features
       - run:
-          name: hyper-zipkin
+          name: Test hyper-zipkin
           command: cargo test -p hyper-zipkin
       - save_cache:
-          key: target-{{ checksum "Cargo.lock" }}
+          key: dependencies-{{ checksum "Cargo.lock" }}
           paths:
             - target
+            - ~/.cargo/registry/cache
