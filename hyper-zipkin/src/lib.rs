@@ -20,7 +20,7 @@ extern crate zipkin;
 #[macro_use]
 extern crate hyper;
 
-use hyper::header::{Header, HeaderFormat, Headers};
+use hyper::header::{Header, Headers, Raw, Formatter};
 use std::fmt;
 use std::ops::{Deref, DerefMut};
 use zipkin::{TraceId, SpanId, TraceContext};
@@ -61,9 +61,8 @@ impl Header for XB3Flags {
         "X-B3-Flags"
     }
 
-    fn parse_header(raw: &[Vec<u8>]) -> hyper::Result<XB3Flags> {
-        if raw.len() == 1 {
-            let line = &raw[0];
+    fn parse_header(raw: &Raw) -> hyper::Result<XB3Flags> {
+        if let Some(line) = raw.one() {
             if line.len() == 1 {
                 let byte = line[0];
                 match byte {
@@ -74,11 +73,9 @@ impl Header for XB3Flags {
         }
         Err(hyper::Error::Header)
     }
-}
 
-impl HeaderFormat for XB3Flags {
-    fn fmt_header(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        fmt.write_str("1")
+    fn fmt_header(&self, fmt: &mut Formatter) -> fmt::Result {
+        fmt.fmt_line(&"1")
     }
 }
 
@@ -109,9 +106,8 @@ impl Header for XB3Sampled {
         "X-B3-Sampled"
     }
 
-    fn parse_header(raw: &[Vec<u8>]) -> hyper::Result<XB3Sampled> {
-        if raw.len() == 1 {
-            let line = &raw[0];
+    fn parse_header(raw: &Raw) -> hyper::Result<XB3Sampled> {
+        if let Some(line) = raw.one() {
             if line.len() == 1 {
                 let byte = line[0];
                 match byte {
@@ -123,15 +119,10 @@ impl Header for XB3Sampled {
         }
         Err(hyper::Error::Header)
     }
-}
 
-impl HeaderFormat for XB3Sampled {
-    fn fmt_header(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        if self.0 {
-            fmt.write_str("1")
-        } else {
-            fmt.write_str("0")
-        }
+    fn fmt_header(&self, fmt: &mut Formatter) -> fmt::Result {
+        let s = if self.0 { "1" } else { "0" };
+        fmt.fmt_line(&s)
     }
 }
 
