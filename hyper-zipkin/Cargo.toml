@@ -1,11 +1,11 @@
 [package]
 name = "hyper-zipkin"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Steven Fackler <sfackler@palantir.com>"]
 license = "Apache-2.0"
 description = "Hyper header definitions for standard Zipkin headers"
 repository = "https://github.com/palantir/rust-zipkin"
-documentation = "https://docs.rs/hyper-zipkin/0.1.0/hyper_zipkin"
+documentation = "https://docs.rs/hyper-zipkin/0.2.0/hyper_zipkin"
 readme = "../README.md"
 categories = ["web-programming"]
 keywords = ["zipkin", "tracing"]
