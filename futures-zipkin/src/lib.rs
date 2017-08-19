@@ -22,6 +22,7 @@
 //!
 //! This crate provides a wrapper `Future` which ensures that the thread-local
 //! current span is set appropriately whenever the inner `Future` is running.
+#![doc(html_root_url="https://docs.rs/zipkin-futures/0.1")]
 #![warn(missing_docs)]
 
 extern crate futures;
