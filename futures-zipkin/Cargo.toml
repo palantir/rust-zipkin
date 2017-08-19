@@ -1,0 +1,8 @@
+[package]
+name = "futures-zipkin"
+version = "0.1.0"
+authors = ["Steven Fackler <sfackler@palantir.com>"]
+
+[dependencies]
+futures = "0.1"
+zipkin = "0.1.0"
