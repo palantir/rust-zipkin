@@ -12,12 +12,26 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+//! Futures support for Zipkin tracing.
+//!
+//! The `Tracer` type uses thread local storage to track the current span. This
+//! works well in blocking applications where a unit of work "owns" a thread
+//! while it's running. However, it is less appropriate for futures-based
+//! applications where multiple distinct futures are being evaluated on the same
+//! thread in an interleaved fashion.
+//!
+//! This crate provides a wrapper `Future` which ensures that the thread-local
+//! current span is set appropriately whenever the inner `Future` is running.
+#![warn(missing_docs)]
+
 extern crate futures;
 extern crate zipkin;
 
 use futures::{Future, Poll};
 use zipkin::{Tracer, OpenSpan};
 
+/// A wrapping `Future` which ensures that a Zipkin span is active while its
+/// inner future runs.
 pub struct SpannedFuture<F> {
     span: OpenSpan,
     tracer: Tracer,
@@ -28,6 +42,7 @@ impl<F> SpannedFuture<F>
 where
     F: Future,
 {
+    /// Returns a new `SpannedFuture`.
     pub fn new(span: OpenSpan, tracer: &Tracer, future: F) -> SpannedFuture<F> {
         SpannedFuture {
             span,
