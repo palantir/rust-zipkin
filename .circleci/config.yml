@@ -30,7 +30,6 @@ jobs:
       - run: cargo generate-lockfile
       - <<: *SAVE_REGISTRY
       - <<: *RESTORE_DEPS
-      - run: cargo test -p zipkin
-      - run: cargo test -p zipkin --all-features
-      - run: cargo test -p hyper-zipkin
+      - run: cargo test --all
+      - run: cargo test --all --all-features
       - <<: *SAVE_DEPS
