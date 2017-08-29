@@ -20,9 +20,9 @@
 //! applications where multiple distinct futures are being evaluated on the same
 //! thread in an interleaved fashion.
 //!
-//! This crate provides a `Spanned` wrapper type which ensures that the current
-//! trace context is registered with a `Tracer` while a futures type is
-//! processing. It can wrap `Future`s, `Sink`s, and `Stream`s.
+//! This crate provides a `Spanned` wrapper type which ensures that a trace
+//! context is registered with a `Tracer` while a futures type is processing.
+//! It can wrap `Future`s, `Sink`s, and `Stream`s.
 #![doc(html_root_url="https://docs.rs/zipkin-futures/0.1")]
 #![warn(missing_docs)]
 
@@ -30,24 +30,21 @@ extern crate futures;
 extern crate zipkin;
 
 use futures::{Future, Poll, Stream, Sink, StartSend};
-use zipkin::{Tracer, OpenSpan};
+use zipkin::{Tracer, TraceContext};
 
-#[deprecated(note = "renamed to Spanned", since = "0.1.1")]
-pub use Spanned as SpannedFuture;
-
-/// A wrapper type which ensures that a Zipkin span is active while its inner
-/// value runs.
+/// A wrapper type which ensures that a Zipkin trace context is active while its
+/// inner value runs.
 pub struct Spanned<T> {
-    span: OpenSpan,
+    context: TraceContext,
     tracer: Tracer,
     inner: T,
 }
 
 impl<T> Spanned<T> {
     /// Returns a new `Spanned`.
-    pub fn new(span: OpenSpan, tracer: &Tracer, inner: T) -> Spanned<T> {
+    pub fn new(context: TraceContext, tracer: &Tracer, inner: T) -> Spanned<T> {
         Spanned {
-            span,
+            context,
             tracer: tracer.clone(),
             inner,
         }
@@ -62,7 +59,7 @@ where
     type Error = F::Error;
 
     fn poll(&mut self) -> Poll<F::Item, F::Error> {
-        let _guard = self.tracer.set_current(self.span.context());
+        let _guard = self.tracer.set_current(self.context);
         self.inner.poll()
     }
 }
@@ -75,7 +72,7 @@ where
     type Error = S::Error;
 
     fn poll(&mut self) -> Poll<Option<S::Item>, S::Error> {
-        let _guard = self.tracer.set_current(self.span.context());
+        let _guard = self.tracer.set_current(self.context);
         self.inner.poll()
     }
 }
@@ -88,17 +85,17 @@ where
     type SinkError = S::SinkError;
 
     fn start_send(&mut self, item: S::SinkItem) -> StartSend<S::SinkItem, S::SinkError> {
-        let _guard = self.tracer.set_current(self.span.context());
+        let _guard = self.tracer.set_current(self.context);
         self.inner.start_send(item)
     }
 
     fn poll_complete(&mut self) -> Poll<(), S::SinkError> {
-        let _guard = self.tracer.set_current(self.span.context());
+        let _guard = self.tracer.set_current(self.context);
         self.inner.poll_complete()
     }
 
     fn close(&mut self) -> Poll<(), S::SinkError> {
-        let _guard = self.tracer.set_current(self.span.context());
+        let _guard = self.tracer.set_current(self.context);
         self.inner.close()
     }
 }
