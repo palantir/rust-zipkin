@@ -1,6 +1,6 @@
 # rust-zipkin
 
-[![CircleCI](https://circleci.com/gh/palantir/rust-zipkin.svg?style=svg)](https://circleci.com/gh/palantir/rust-zipkin)
+[![CircleCI](https://circleci.com/gh/palantir/rust-zipkin.svg?style=shield)](https://circleci.com/gh/palantir/rust-zipkin)
 
 A collection of crates to support the Zipkin distributed tracing system.
 
