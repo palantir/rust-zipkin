@@ -51,14 +51,14 @@ impl FromStr for TraceId {
                 let mut buf = [0; 8];
                 HEXLOWER_PERMISSIVE
                     .decode_mut(s.as_bytes(), &mut buf)
-                    .map_err(|e| TraceIdParseError(Some(e)))?;
+                    .map_err(|e| TraceIdParseError(Some(e.error)))?;
                 Inner::Short(buf)
             }
             Ok(16) => {
                 let mut buf = [0; 16];
                 HEXLOWER_PERMISSIVE
                     .decode_mut(s.as_bytes(), &mut buf)
-                    .map_err(|e| TraceIdParseError(Some(e)))?;
+                    .map_err(|e| TraceIdParseError(Some(e.error)))?;
                 Inner::Long(buf)
             }
             _ => return Err(TraceIdParseError(None)),

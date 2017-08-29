@@ -37,7 +37,7 @@ impl FromStr for SpanId {
             Ok(8) => {
                 HEXLOWER_PERMISSIVE
                     .decode_mut(s.as_bytes(), &mut buf)
-                    .map_err(|e| SpanIdParseError(Some(e)))?
+                    .map_err(|e| SpanIdParseError(Some(e.error)))?;
             }
             _ => return Err(SpanIdParseError(None)),
         }
