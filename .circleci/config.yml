@@ -26,10 +26,10 @@ jobs:
       - image: rust:1.19.0
     steps:
       - checkout
-      - <<: *RESTORE_REGISTRY
+      - *RESTORE_REGISTRY
       - run: cargo generate-lockfile
-      - <<: *SAVE_REGISTRY
-      - <<: *RESTORE_DEPS
+      - *SAVE_REGISTRY
+      - *RESTORE_DEPS
       - run: cargo test --all
       - run: cargo test --all --all-features
-      - <<: *SAVE_DEPS
+      - *SAVE_DEPS
