@@ -24,6 +24,8 @@ jobs:
     working_directory: ~/build
     docker:
       - image: rust:1.19.0
+        environment:
+          RUSTFLAGS: -D warnings
     steps:
       - checkout
       - *RESTORE_REGISTRY
