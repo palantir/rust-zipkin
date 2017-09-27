@@ -49,6 +49,21 @@ impl<T> Spanned<T> {
             inner,
         }
     }
+
+    /// Returns the `TraceContext` associated with this value.
+    pub fn context(&self) -> TraceContext {
+        self.context
+    }
+
+    /// Returns the `Tracer` associated with this value.
+    pub fn tracer(&self) -> &Tracer {
+        &self.tracer
+    }
+
+    /// Returns the spanned value.
+    pub fn into_inner(self) -> T {
+        self.inner
+    }
 }
 
 impl<F> Future for Spanned<F>
