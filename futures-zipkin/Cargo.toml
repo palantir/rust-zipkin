@@ -1,11 +1,10 @@
 [package]
 name = "futures-zipkin"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Steven Fackler <sfackler@palantir.com>"]
 license = "Apache-2.0"
 description = "Futures support for Zipkin tracing"
 repository = "https://github.com/palantir/rust-zipkin"
-documentation = "https://docs.rs/futures-zipkin/0.1"
 readme = "../README.md"
 categories = ["network-programming", "web-programming"]
 keywords = ["zipkin", "tracing"]

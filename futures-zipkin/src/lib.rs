@@ -23,7 +23,7 @@
 //! This crate provides a `Spanned` wrapper type which ensures that a trace
 //! context is registered with a `Tracer` while a futures type is processing.
 //! It can wrap `Future`s, `Sink`s, and `Stream`s.
-#![doc(html_root_url="https://docs.rs/zipkin-futures/0.1")]
+#![doc(html_root_url="https://docs.rs/zipkin-futures/0.2")]
 #![warn(missing_docs)]
 
 extern crate futures;
