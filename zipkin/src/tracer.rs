@@ -24,6 +24,12 @@ use {Report, Sample, Endpoint, TraceContext, Annotation, BinaryAnnotation, Trace
 use report::LoggingReporter;
 use sample::AlwaysSampler;
 
+const CS_SET: u8 = 1 << 0;
+const CR_SET: u8 = 1 << 1;
+const SR_SET: u8 = 1 << 2;
+const SS_SET: u8 = 1 << 3;
+const LC_SET: u8 = 1 << 4;
+
 enum Kind {
     Client,
     Server,
@@ -39,6 +45,7 @@ enum SpanState {
         kind: Kind,
         annotations: Vec<Annotation>,
         binary_annotations: Vec<BinaryAnnotation>,
+        annotation_set: u8,
     },
     Nop,
 }
@@ -102,6 +109,7 @@ impl Drop for OpenSpan {
             kind,
             annotations,
             binary_annotations,
+            annotation_set,
         } = mem::replace(&mut self.state, SpanState::Nop)
         {
             let mut span = Span::builder();
@@ -114,36 +122,47 @@ impl Drop for OpenSpan {
                 span.timestamp(start_time).duration(start_instant.elapsed());
             }
 
+            // fill in standard annotations if they haven't already been set
             match kind {
                 Kind::Client => {
-                    let annotation = Annotation::builder()
-                        .timestamp(start_time)
-                        .endpoint(self.guard.tracer.0.local_endpoint.clone())
-                        .build("cs");
-                    span.annotation(annotation);
+                    if annotation_set & CS_SET == 0 {
+                        let annotation = Annotation::builder()
+                            .timestamp(start_time)
+                            .endpoint(self.guard.tracer.0.local_endpoint.clone())
+                            .build("cs");
+                        span.annotation(annotation);
+                    }
 
-                    let annotation = Annotation::builder()
-                        .endpoint(self.guard.tracer.0.local_endpoint.clone())
-                        .build("cr");
-                    span.annotation(annotation);
+                    if annotation_set & CR_SET == 0 {
+                        let annotation = Annotation::builder()
+                            .endpoint(self.guard.tracer.0.local_endpoint.clone())
+                            .build("cr");
+                        span.annotation(annotation);
+                    }
                 }
                 Kind::Server => {
-                    let annotation = Annotation::builder()
-                        .timestamp(start_time)
-                        .endpoint(self.guard.tracer.0.local_endpoint.clone())
-                        .build("sr");
-                    span.annotation(annotation);
+                    if annotation_set & SR_SET == 0 {
+                        let annotation = Annotation::builder()
+                            .timestamp(start_time)
+                            .endpoint(self.guard.tracer.0.local_endpoint.clone())
+                            .build("sr");
+                        span.annotation(annotation);
+                    }
 
-                    let annotation = Annotation::builder()
-                        .endpoint(self.guard.tracer.0.local_endpoint.clone())
-                        .build("ss");
-                    span.annotation(annotation);
+                    if annotation_set & SS_SET == 0 {
+                        let annotation = Annotation::builder()
+                            .endpoint(self.guard.tracer.0.local_endpoint.clone())
+                            .build("ss");
+                        span.annotation(annotation);
+                    }
                 }
                 Kind::Local => {
-                    let binary_annotation = BinaryAnnotation::builder()
-                        .endpoint(self.guard.tracer.0.local_endpoint.clone())
-                        .build("lc", "");
-                    span.binary_annotation(binary_annotation);
+                    if annotation_set & LC_SET == 0 {
+                        let binary_annotation = BinaryAnnotation::builder()
+                            .endpoint(self.guard.tracer.0.local_endpoint.clone())
+                            .build("lc", "");
+                        span.binary_annotation(binary_annotation);
+                    }
                 }
             }
 
@@ -184,7 +203,20 @@ impl OpenSpan {
 
     /// Attaches an annotation to this span.
     pub fn annotate(&mut self, value: &str) {
-        if let SpanState::Real { ref mut annotations, .. } = self.state {
+        if let SpanState::Real {
+            ref mut annotations,
+            ref mut annotation_set,
+            ..
+        } = self.state
+        {
+            match value {
+                "cs" => *annotation_set |= CS_SET,
+                "cr" => *annotation_set |= CR_SET,
+                "sr" => *annotation_set |= SR_SET,
+                "ss" => *annotation_set |= SS_SET,
+                _ => {}
+            }
+
             let annotation = Annotation::builder()
                 .endpoint(self.guard.tracer.0.local_endpoint.clone())
                 .build(value);
@@ -194,7 +226,15 @@ impl OpenSpan {
 
     /// Attaches a binary annotation to this span.
     pub fn tag(&mut self, key: &str, value: &str) {
-        if let SpanState::Real { ref mut binary_annotations, .. } = self.state {
+        if let SpanState::Real {
+            ref mut binary_annotations,
+            ref mut annotation_set,
+            ..
+        } = self.state
+        {
+            if key == "lc" {
+                *annotation_set |= LC_SET;
+            }
             let binary_annotation = BinaryAnnotation::builder()
                 .endpoint(self.guard.tracer.0.local_endpoint.clone())
                 .build(key, value);
@@ -275,6 +315,7 @@ impl Tracer {
                     kind: Kind::Local,
                     annotations: vec![],
                     binary_annotations: vec![],
+                    annotation_set: 0,
                 }
             }
         };
