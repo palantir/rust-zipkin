@@ -24,6 +24,7 @@
 //! [Zipkin]: http://zipkin.io/
 #![doc(html_root_url="https://docs.rs/zipkin/0.1")]
 #![warn(missing_docs)]
+
 extern crate data_encoding;
 extern crate rand;
 extern crate thread_local_object;

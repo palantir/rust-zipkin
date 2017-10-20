@@ -7,7 +7,7 @@ save_registry: &SAVE_REGISTRY
     paths:
     - /usr/local/cargo/registry/index
 deps_key: &DEPS_KEY
-  key: deps-1.19.0-{{ checksum "Cargo.lock" }}
+  key: deps-{{ checksum "~/rust-version" }}-{{ checksum "Cargo.lock" }}
 restore_deps: &RESTORE_DEPS
   restore_cache:
     <<: *DEPS_KEY
@@ -31,6 +31,7 @@ jobs:
       - *RESTORE_REGISTRY
       - run: cargo generate-lockfile
       - *SAVE_REGISTRY
+      - run: rustc --version > ~/rust-version
       - *RESTORE_DEPS
       - run: cargo test --all
       - run: cargo test --all --all-features

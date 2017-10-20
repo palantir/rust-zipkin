@@ -13,6 +13,8 @@
 //  limitations under the License.
 
 //! Span samplers.
+use rand;
+
 use TraceId;
 
 /// A sampler decides whether or not a span should be recorded based on its
@@ -42,5 +44,28 @@ pub struct NeverSampler;
 impl Sample for NeverSampler {
     fn sample(&self, _: TraceId) -> bool {
         false
+    }
+}
+
+/// A `Sample`r which randomly samples at a specific rate.
+pub struct RandomSampler {
+    rate: f32,
+}
+
+impl RandomSampler {
+    /// Creates a new `RandomSampler` at the specified rate.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `rate` is less than 0 or greater than 1.
+    pub fn new(rate: f32) -> RandomSampler {
+        assert!(rate >= 0. && rate <= 1.);
+        RandomSampler { rate }
+    }
+}
+
+impl Sample for RandomSampler {
+    fn sample(&self, _: TraceId) -> bool {
+        rand::random::<f32>() > self.rate
     }
 }
