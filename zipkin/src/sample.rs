@@ -66,6 +66,6 @@ impl RandomSampler {
 
 impl Sample for RandomSampler {
     fn sample(&self, _: TraceId) -> bool {
-        rand::random::<f32>() <= self.rate
+        rand::random::<f32>() < self.rate
     }
 }
