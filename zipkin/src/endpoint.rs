@@ -22,8 +22,9 @@ use std::net::{Ipv4Addr, Ipv6Addr, IpAddr};
 /// optional port.
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
 pub struct Endpoint {
-    name: String,
+    service_name: String,
     #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
     ipv4: Option<Ipv4Addr>,
     #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
@@ -43,8 +44,14 @@ impl Endpoint {
     }
 
     /// Returns the name of the service at this endpoint.
+    pub fn service_name(&self) -> &str {
+        &self.service_name
+    }
+
+    /// Returns the name of the service at this endpoint.
+    #[deprecated(since = "0.1.5", note = "renamed to service_name")]
     pub fn name(&self) -> &str {
-        &self.name
+        self.service_name()
     }
 
     /// Returns the IPv4 address of the service at this endpoint.
@@ -107,9 +114,9 @@ impl Builder {
     }
 
     /// Constructs the `Endpoint`.
-    pub fn build(&mut self, name: &str) -> Endpoint {
+    pub fn build(&mut self, service_name: &str) -> Endpoint {
         Endpoint {
-            name: name.to_string(),
+            service_name: service_name.to_string(),
             ipv4: self.ipv4.take(),
             ipv6: self.ipv6.take(),
             port: self.port.take(),

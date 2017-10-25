@@ -37,6 +37,7 @@ use endpoint::Endpoint;
 /// Arbitrary user-defined values can also be used.
 #[derive(Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
 pub struct Annotation {
     #[cfg_attr(feature = "serde", serde(serialize_with = "::time_micros"))]
     timestamp: SystemTime,

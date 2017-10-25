@@ -28,6 +28,7 @@ use Endpoint;
 /// Arbitrary user-defined keys can also be used.
 #[derive(Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
 pub struct BinaryAnnotation {
     key: String,
     value: String,

@@ -32,6 +32,7 @@ use {TraceId, SpanId, Annotation, BinaryAnnotation};
 /// they will be merged.
 #[derive(Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
 pub struct Span {
     trace_id: TraceId,
     name: String,
