@@ -30,7 +30,7 @@ use {TraceId, SpanId, Annotation, BinaryAnnotation};
 /// span, and the server span should omit that information. The client and
 /// server may both add their own annotations and binary annotations the span -
 /// they will be merged.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
 pub struct Span {

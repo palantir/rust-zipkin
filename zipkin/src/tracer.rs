@@ -20,7 +20,7 @@ use std::sync::Arc;
 use std::time::{Instant, SystemTime};
 use thread_local_object::ThreadLocal;
 
-use {Report, Sample, Endpoint, TraceContext, Annotation, BinaryAnnotation, TraceId, SpanId, Span};
+use {Annotation, BinaryAnnotation, Endpoint, Report, Sample, Span, SpanId, TraceContext, TraceId};
 use report::LoggingReporter;
 use sample::AlwaysSampler;
 
@@ -56,12 +56,24 @@ enum SpanState {
 pub struct CurrentGuard {
     tracer: Tracer,
     prev: Option<TraceContext>,
+    done: bool,
     // make sure this type is !Send and !Sync since it pokes at thread locals
     _p: PhantomData<*const ()>,
 }
 
 impl Drop for CurrentGuard {
     fn drop(&mut self) {
+        self.detach();
+    }
+}
+
+impl CurrentGuard {
+    fn detach(&mut self) {
+        if self.done {
+            return;
+        }
+        self.done = true;
+
         match self.prev.take() {
             Some(prev) => {
                 self.tracer.0.current.set(prev);
@@ -241,6 +253,19 @@ impl OpenSpan {
             binary_annotations.push(binary_annotation);
         }
     }
+
+    /// "Detaches" this span from the `Tracer`.
+    ///
+    /// The parent of this span is normally re-registered as the `Tracer`'s
+    /// current span when the `OpenSpan` drops. This method will cause that to
+    /// happen immediately. New child spans created from the `Tracer` afterwards
+    /// will be parented to this span's parent rather than this span itself.
+    ///
+    /// This is intended to be used to enable the creation of multiple
+    /// "parallel" spans.
+    pub fn detach(&mut self) {
+        self.guard.detach();
+    }
 }
 
 struct Inner {
@@ -306,18 +331,16 @@ impl Tracer {
 
         let state = match context.sampled() {
             Some(false) => SpanState::Nop,
-            _ => {
-                SpanState::Real {
-                    name: name.to_string(),
-                    start_time: SystemTime::now(),
-                    start_instant: Instant::now(),
-                    shared,
-                    kind: Kind::Local,
-                    annotations: vec![],
-                    binary_annotations: vec![],
-                    annotation_set: 0,
-                }
-            }
+            _ => SpanState::Real {
+                name: name.to_string(),
+                start_time: SystemTime::now(),
+                start_instant: Instant::now(),
+                shared,
+                kind: Kind::Local,
+                annotations: vec![],
+                binary_annotations: vec![],
+                annotation_set: 0,
+            },
         };
 
         self.new_span(context, state)
@@ -344,6 +367,7 @@ impl Tracer {
         CurrentGuard {
             tracer: self.clone(),
             prev: self.0.current.set(context),
+            done: false,
             _p: PhantomData,
         }
     }
