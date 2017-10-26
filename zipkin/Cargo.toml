@@ -1,6 +1,6 @@
 [package]
 name = "zipkin"
-version = "0.1.5"
+version = "0.1.6"
 authors = ["Steven Fackler <sfackler@palantir.com>"]
 license = "Apache-2.0"
 description = "A library for collecting timing information about distributed computations"
