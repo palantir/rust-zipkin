@@ -12,7 +12,7 @@ keywords = ["zipkin", "tracing"]
 
 [dependencies]
 data-encoding = "2.1"
-log = "0.3"
+log = "0.4"
 rand = "0.3"
 serde = { version = "1.0", optional = true, features = ["derive"] }
 thread-local-object = "0.1"
