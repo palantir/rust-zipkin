@@ -11,6 +11,6 @@ categories = ["web-programming"]
 keywords = ["zipkin", "tracing"]
 
 [dependencies]
-hyper = "0.11"
+hyper = { version = "0.11", default-features = false }
 
 zipkin = { version = "0.1.0", path = "../zipkin" }
