@@ -47,7 +47,9 @@ pub struct Span {
                serde(skip_serializing_if = "Option::is_none",
                        serialize_with = "::opt_duration_micros"))]
     duration: Option<Duration>,
+    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Vec::is_empty"))]
     annotations: Vec<Annotation>,
+    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Vec::is_empty"))]
     binary_annotations: Vec<BinaryAnnotation>,
 }
 
