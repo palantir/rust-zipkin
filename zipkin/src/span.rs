@@ -13,10 +13,10 @@
 //  limitations under the License.
 
 //! Spans.
-use std::time::{SystemTime, Duration};
+use std::time::{Duration, SystemTime};
 use std::mem;
 
-use {TraceId, SpanId, Annotation, BinaryAnnotation};
+use {Annotation, BinaryAnnotation, SpanId, TraceId};
 
 /// A `Span` represents a single operation over some range of time.
 ///
@@ -36,21 +36,28 @@ use {TraceId, SpanId, Annotation, BinaryAnnotation};
 pub struct Span {
     trace_id: TraceId,
     name: String,
-    id: SpanId,
     #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
     parent_id: Option<SpanId>,
+    id: SpanId,
     #[cfg_attr(feature = "serde",
                serde(skip_serializing_if = "Option::is_none",
-                       serialize_with = "::opt_time_micros"))]
+                     serialize_with = "::opt_time_micros"))]
     timestamp: Option<SystemTime>,
     #[cfg_attr(feature = "serde",
                serde(skip_serializing_if = "Option::is_none",
-                       serialize_with = "::opt_duration_micros"))]
+                     serialize_with = "::opt_duration_micros"))]
     duration: Option<Duration>,
+    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "is_false"))]
+    debug: bool,
     #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Vec::is_empty"))]
     annotations: Vec<Annotation>,
     #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Vec::is_empty"))]
     binary_annotations: Vec<BinaryAnnotation>,
+}
+
+#[cfg(feature = "serde")]
+fn is_false(v: &bool) -> bool {
+    !*v
 }
 
 impl Span {
@@ -60,6 +67,7 @@ impl Span {
             parent_id: None,
             timestamp: None,
             duration: None,
+            debug: false,
             annotations: vec![],
             binary_annotations: vec![],
         }
@@ -75,14 +83,14 @@ impl Span {
         &self.name
     }
 
-    /// Returns the ID of this span.
-    pub fn id(&self) -> SpanId {
-        self.id
-    }
-
     /// Returns the ID of the parent of this span, if one exists.
     pub fn parent_id(&self) -> Option<SpanId> {
         self.parent_id
+    }
+
+    /// Returns the ID of this span.
+    pub fn id(&self) -> SpanId {
+        self.id
     }
 
     /// Returns the time of the beginning of this span, if known.
@@ -93,6 +101,13 @@ impl Span {
     /// Returns the duration of this span, if known.
     pub fn duration(&self) -> Option<Duration> {
         self.duration
+    }
+
+    /// Determines if this span is part of a normal of forcibly sampled span.
+    ///
+    /// If true, the span should always be sampled regardless of the sampling configuration.
+    pub fn debug(&self) -> bool {
+        self.debug
     }
 
     /// Returns the annotations associated with this span.
@@ -111,6 +126,7 @@ pub struct Builder {
     parent_id: Option<SpanId>,
     timestamp: Option<SystemTime>,
     duration: Option<Duration>,
+    debug: bool,
     annotations: Vec<Annotation>,
     binary_annotations: Vec<BinaryAnnotation>,
 }
@@ -137,6 +153,14 @@ impl Builder {
     /// Defaults to `None`.
     pub fn duration(&mut self, duration: Duration) -> &mut Builder {
         self.duration = Some(duration);
+        self
+    }
+
+    /// Sets the debug state of the span.
+    ///
+    /// Defaults to `false`.
+    pub fn debug(&mut self, debug: bool) -> &mut Builder {
+        self.debug = debug;
         self
     }
 
@@ -179,6 +203,7 @@ impl Builder {
             parent_id: self.parent_id.take(),
             timestamp: self.timestamp.take(),
             duration: self.duration.take(),
+            debug: self.debug,
             annotations: mem::replace(&mut self.annotations, vec![]),
             binary_annotations: mem::replace(&mut self.binary_annotations, vec![]),
         }

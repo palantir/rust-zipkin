@@ -130,6 +130,8 @@ impl Drop for OpenSpan {
                 span.parent_id(parent_id);
             }
 
+            span.debug(self.context.debug());
+
             if !shared {
                 span.timestamp(start_time).duration(start_instant.elapsed());
             }
@@ -433,13 +435,13 @@ impl Builder {
 
     /// Constructs a new `Tracer`.
     pub fn build(&mut self, local_endpoint: Endpoint) -> Tracer {
-        let reporter = self.reporter.take().unwrap_or_else(
-            || Box::new(LoggingReporter),
-        );
+        let reporter = self.reporter
+            .take()
+            .unwrap_or_else(|| Box::new(LoggingReporter));
 
-        let sampler = self.sampler.take().unwrap_or_else(
-            || Box::new(AlwaysSampler),
-        );
+        let sampler = self.sampler
+            .take()
+            .unwrap_or_else(|| Box::new(AlwaysSampler));
 
         let inner = Inner {
             current: ThreadLocal::new(),
