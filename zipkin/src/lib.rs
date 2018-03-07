@@ -94,6 +94,7 @@ where
     S: Serializer,
 {
     let micros = duration.as_secs() * 1_000_000 + duration.subsec_nanos() as u64 / 1_000;
+    let micros = micros.max(1);
     micros.serialize(s)
 }
 
