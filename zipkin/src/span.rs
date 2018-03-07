@@ -226,7 +226,7 @@ impl Builder {
     ///
     /// Defaults to `None`.
     pub fn name(&mut self, name: &str) -> &mut Builder {
-        self.name = Some(name.to_string());
+        self.name = Some(name.to_lowercase());
         self
     }
 
