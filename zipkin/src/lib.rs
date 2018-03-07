@@ -36,9 +36,6 @@ extern crate log;
 #[cfg(feature = "serde")]
 extern crate serde;
 
-#[cfg(test)]
-extern crate antidote;
-
 #[cfg(feature = "serde")]
 use serde::{Serialize, Serializer};
 #[cfg(feature = "serde")]
@@ -72,9 +69,6 @@ pub mod span_id;
 pub mod trace_context;
 pub mod trace_id;
 pub mod tracer;
-
-#[cfg(test)]
-mod test;
 
 #[cfg(feature = "serde")]
 fn time_micros<S>(time: &SystemTime, s: S) -> Result<S::Ok, S::Error>

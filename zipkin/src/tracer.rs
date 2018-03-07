@@ -39,24 +39,12 @@ enum SpanState {
 pub struct CurrentGuard {
     tracer: Tracer,
     prev: Option<TraceContext>,
-    done: bool,
     // make sure this type is !Send and !Sync since it pokes at thread locals
     _p: PhantomData<*const ()>,
 }
 
 impl Drop for CurrentGuard {
     fn drop(&mut self) {
-        self.detach();
-    }
-}
-
-impl CurrentGuard {
-    fn detach(&mut self) {
-        if self.done {
-            return;
-        }
-        self.done = true;
-
         match self.prev.take() {
             Some(prev) => {
                 self.tracer.0.current.set(prev);
@@ -136,19 +124,6 @@ impl OpenSpan {
         if let SpanState::Real { ref mut span, .. } = self.state {
             span.tag(key, value);
         }
-    }
-
-    /// "Detaches" this span from the `Tracer`.
-    ///
-    /// The parent of this span is normally re-registered as the `Tracer`'s
-    /// current span when the `OpenSpan` drops. This method will cause that to
-    /// happen immediately. New child spans created from the `Tracer` afterwards
-    /// will be parented to this span's parent rather than this span itself.
-    ///
-    /// This is intended to be used to enable the creation of multiple
-    /// "parallel" spans.
-    pub fn detach(&mut self) {
-        self.guard.detach();
     }
 }
 
@@ -252,7 +227,6 @@ impl Tracer {
         CurrentGuard {
             tracer: self.clone(),
             prev: self.0.current.set(context),
-            done: false,
             _p: PhantomData,
         }
     }
