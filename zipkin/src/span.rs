@@ -54,6 +54,10 @@ pub enum Kind {
     ///     backlog.
     /// * Remote Endpoint - Represents the broker.
     Consumer,
+
+    #[doc(hidden)]
+    #[cfg_attr(feature = "serde", serde(skip_serializing))]
+    __NonExhaustive,
 }
 
 /// A `Span` represents a single operation over some range of time.
