@@ -15,13 +15,15 @@
 //! Zipkin is a library for collecting timing information about computations in
 //! distributed systems. This information is collected into [Zipkin][] spans.
 //!
+//! This library corresponds to version 2 of the Zipkin [specification].
+//!
 //! # Serialization
 //!
-//! If the `serde` Cargo feature is enabled, `Annotation`, `BinaryAnnotation`,
-//! `Endpoint`, `SpanId`, and `TraceId` implement `Serialize` in the standard
-//! Zipkin format.
+//! If the `serde` Cargo feature is enabled, `Annotation`, `Endpoint`, `Kind`, `Span`, `SpanId`, and
+//! `TraceId` implement `Serialize` in the standard Zipkin format.
 //!
 //! [Zipkin]: http://zipkin.io/
+//! [specification]: https://github.com/openzipkin/zipkin-api/blob/master/zipkin2-api.yaml
 #![doc(html_root_url = "https://docs.rs/zipkin/0.1")]
 #![warn(missing_docs)]
 
