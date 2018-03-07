@@ -13,17 +13,17 @@
 //  limitations under the License.
 
 //! Hyper definitions for Zipkin headers.
-#![doc(html_root_url="https://docs.rs/hyper-zipkin/0.2")]
+#![doc(html_root_url = "https://docs.rs/hyper-zipkin/0.3")]
 #![warn(missing_docs)]
 extern crate zipkin;
 
 #[macro_use]
 extern crate hyper;
 
-use hyper::header::{Header, Headers, Raw, Formatter};
+use hyper::header::{Formatter, Header, Headers, Raw};
 use std::fmt;
 use std::ops::{Deref, DerefMut};
-use zipkin::{TraceId, SpanId, TraceContext};
+use zipkin::{SpanId, TraceContext, TraceId};
 
 header! {
     /// The `X-B3-TraceId` header.
