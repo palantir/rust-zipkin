@@ -22,7 +22,7 @@
 //! Zipkin format.
 //!
 //! [Zipkin]: http://zipkin.io/
-#![doc(html_root_url="https://docs.rs/zipkin/0.1")]
+#![doc(html_root_url = "https://docs.rs/zipkin/0.1")]
 #![warn(missing_docs)]
 
 extern crate data_encoding;
@@ -36,18 +36,13 @@ extern crate log;
 #[cfg(feature = "serde")]
 extern crate serde;
 
-#[cfg(test)]
-extern crate antidote;
-
 #[cfg(feature = "serde")]
-use serde::{Serializer, Serialize};
+use serde::{Serialize, Serializer};
 #[cfg(feature = "serde")]
-use std::time::{SystemTime, UNIX_EPOCH, Duration};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 #[doc(inline)]
 pub use annotation::Annotation;
-#[doc(inline)]
-pub use binary_annotation::BinaryAnnotation;
 #[doc(inline)]
 pub use endpoint::Endpoint;
 #[doc(inline)]
@@ -55,7 +50,7 @@ pub use report::Report;
 #[doc(inline)]
 pub use sample::Sample;
 #[doc(inline)]
-pub use span::Span;
+pub use span::{Kind, Span};
 #[doc(inline)]
 pub use span_id::SpanId;
 #[doc(inline)]
@@ -63,10 +58,9 @@ pub use trace_context::TraceContext;
 #[doc(inline)]
 pub use trace_id::TraceId;
 #[doc(inline)]
-pub use tracer::{Tracer, OpenSpan};
+pub use tracer::{OpenSpan, Tracer};
 
 pub mod annotation;
-pub mod binary_annotation;
 pub mod endpoint;
 pub mod report;
 pub mod sample;
@@ -76,18 +70,14 @@ pub mod trace_context;
 pub mod trace_id;
 pub mod tracer;
 
-#[cfg(test)]
-mod test;
-
 #[cfg(feature = "serde")]
 fn time_micros<S>(time: &SystemTime, s: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
     duration_micros(
-        &time.duration_since(UNIX_EPOCH).unwrap_or(
-            Duration::from_secs(0),
-        ),
+        &time.duration_since(UNIX_EPOCH)
+            .unwrap_or(Duration::from_secs(0)),
         s,
     )
 }
@@ -98,6 +88,7 @@ where
     S: Serializer,
 {
     let micros = duration.as_secs() * 1_000_000 + duration.subsec_nanos() as u64 / 1_000;
+    let micros = micros.max(1);
     micros.serialize(s)
 }
 

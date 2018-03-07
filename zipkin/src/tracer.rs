@@ -20,32 +20,15 @@ use std::sync::Arc;
 use std::time::{Instant, SystemTime};
 use thread_local_object::ThreadLocal;
 
-use {Annotation, BinaryAnnotation, Endpoint, Report, Sample, Span, SpanId, TraceContext, TraceId};
+use {Annotation, Endpoint, Kind, Report, Sample, Span, SpanId, TraceContext, TraceId};
 use report::LoggingReporter;
 use sample::AlwaysSampler;
-
-const CS_SET: u8 = 1 << 0;
-const CR_SET: u8 = 1 << 1;
-const SR_SET: u8 = 1 << 2;
-const SS_SET: u8 = 1 << 3;
-const LC_SET: u8 = 1 << 4;
-
-enum Kind {
-    Client,
-    Server,
-    Local,
-}
+use span;
 
 enum SpanState {
     Real {
-        name: String,
-        start_time: SystemTime,
+        span: span::Builder,
         start_instant: Instant,
-        shared: bool,
-        kind: Kind,
-        annotations: Vec<Annotation>,
-        binary_annotations: Vec<BinaryAnnotation>,
-        annotation_set: u8,
     },
     Nop,
 }
@@ -56,24 +39,12 @@ enum SpanState {
 pub struct CurrentGuard {
     tracer: Tracer,
     prev: Option<TraceContext>,
-    done: bool,
     // make sure this type is !Send and !Sync since it pokes at thread locals
     _p: PhantomData<*const ()>,
 }
 
 impl Drop for CurrentGuard {
     fn drop(&mut self) {
-        self.detach();
-    }
-}
-
-impl CurrentGuard {
-    fn detach(&mut self) {
-        if self.done {
-            return;
-        }
-        self.done = true;
-
         match self.prev.take() {
             Some(prev) => {
                 self.tracer.0.current.set(prev);
@@ -89,22 +60,6 @@ impl CurrentGuard {
 ///
 /// This is a guard object - the span will be finished and reported when it
 /// falls out of scope.
-///
-/// An open span is either a "local", "client", or "server" span. Local spans
-/// are for operations that are local and do not talk to remote services. Client
-/// spans are for operations that involve making a request to a remote service.
-/// Server spans are for the other end of that - a server which receives a
-/// requests from a remote client.
-///
-/// This controls how the span is reported - local spans have an "lc" binary
-/// annotation identifying the local endpoint, client spans have "cs" and "cr"
-/// annotations indicating the times at which the request was sent and the
-/// response was received, and server spans have "sr" and "ss" annotations
-/// indicating the times at which the request was received and the response was
-/// sent.
-///
-/// A span defaults to being local - use the `client()` and `server()` methods
-/// to change that for an individual span.
 pub struct OpenSpan {
     guard: CurrentGuard,
     context: TraceContext,
@@ -114,76 +69,16 @@ pub struct OpenSpan {
 impl Drop for OpenSpan {
     fn drop(&mut self) {
         if let SpanState::Real {
-            name,
-            start_time,
+            mut span,
             start_instant,
-            shared,
-            kind,
-            annotations,
-            binary_annotations,
-            annotation_set,
         } = mem::replace(&mut self.state, SpanState::Nop)
         {
-            let mut span = Span::builder();
-
+            span.duration(start_instant.elapsed());
             if let Some(parent_id) = self.context.parent_id() {
                 span.parent_id(parent_id);
             }
+            let span = span.build(self.context.trace_id(), self.context.span_id());
 
-            span.debug(self.context.debug());
-
-            if !shared {
-                span.timestamp(start_time).duration(start_instant.elapsed());
-            }
-
-            // fill in standard annotations if they haven't already been set
-            match kind {
-                Kind::Client => {
-                    if annotation_set & CS_SET == 0 {
-                        let annotation = Annotation::builder()
-                            .timestamp(start_time)
-                            .endpoint(self.guard.tracer.0.local_endpoint.clone())
-                            .build("cs");
-                        span.annotation(annotation);
-                    }
-
-                    if annotation_set & CR_SET == 0 {
-                        let annotation = Annotation::builder()
-                            .endpoint(self.guard.tracer.0.local_endpoint.clone())
-                            .build("cr");
-                        span.annotation(annotation);
-                    }
-                }
-                Kind::Server => {
-                    if annotation_set & SR_SET == 0 {
-                        let annotation = Annotation::builder()
-                            .timestamp(start_time)
-                            .endpoint(self.guard.tracer.0.local_endpoint.clone())
-                            .build("sr");
-                        span.annotation(annotation);
-                    }
-
-                    if annotation_set & SS_SET == 0 {
-                        let annotation = Annotation::builder()
-                            .endpoint(self.guard.tracer.0.local_endpoint.clone())
-                            .build("ss");
-                        span.annotation(annotation);
-                    }
-                }
-                Kind::Local => {
-                    if annotation_set & LC_SET == 0 {
-                        let binary_annotation = BinaryAnnotation::builder()
-                            .endpoint(self.guard.tracer.0.local_endpoint.clone())
-                            .build("lc", "");
-                        span.binary_annotation(binary_annotation);
-                    }
-                }
-            }
-
-            span.annotations(annotations);
-            span.binary_annotations(binary_annotations);
-
-            let span = span.build(self.context.trace_id(), name, self.context.span_id());
             self.guard.tracer.0.reporter.report(&span);
         }
     }
@@ -195,78 +90,40 @@ impl OpenSpan {
         self.context
     }
 
-    /// Sets this span to be a server span.
-    ///
-    /// When completed, server spans have "sr" and "ss" annotations
-    /// automatically attached.
-    pub fn server(&mut self) {
-        if let SpanState::Real { ref mut kind, .. } = self.state {
-            *kind = Kind::Server;
+    /// Sets the name of this span.
+    pub fn name(&mut self, name: &str) {
+        if let SpanState::Real { ref mut span, .. } = self.state {
+            span.name(name);
         }
     }
 
-    /// Sets this span to be a client span.
-    ///
-    /// When completed, client spans have "cs" and "cr" annotations
-    /// automatically attached.
-    pub fn client(&mut self) {
-        if let SpanState::Real { ref mut kind, .. } = self.state {
-            *kind = Kind::Client;
+    /// Sets the kind of this span.
+    pub fn kind(&mut self, kind: Kind) {
+        if let SpanState::Real { ref mut span, .. } = self.state {
+            span.kind(kind);
+        }
+    }
+
+    /// Sets the remote endpoint of this span.
+    pub fn remote_endpoint(&mut self, remote_endpoint: Endpoint) {
+        if let SpanState::Real { ref mut span, .. } = self.state {
+            span.remote_endpoint(remote_endpoint);
         }
     }
 
     /// Attaches an annotation to this span.
     pub fn annotate(&mut self, value: &str) {
-        if let SpanState::Real {
-            ref mut annotations,
-            ref mut annotation_set,
-            ..
-        } = self.state
-        {
-            match value {
-                "cs" => *annotation_set |= CS_SET,
-                "cr" => *annotation_set |= CR_SET,
-                "sr" => *annotation_set |= SR_SET,
-                "ss" => *annotation_set |= SS_SET,
-                _ => {}
-            }
-
-            let annotation = Annotation::builder()
-                .endpoint(self.guard.tracer.0.local_endpoint.clone())
-                .build(value);
-            annotations.push(annotation);
+        if let SpanState::Real { ref mut span, .. } = self.state {
+            let annotation = Annotation::now(value);
+            span.annotation(annotation);
         }
     }
 
-    /// Attaches a binary annotation to this span.
+    /// Attaches a tag to this span.
     pub fn tag(&mut self, key: &str, value: &str) {
-        if let SpanState::Real {
-            ref mut binary_annotations,
-            ref mut annotation_set,
-            ..
-        } = self.state
-        {
-            if key == "lc" {
-                *annotation_set |= LC_SET;
-            }
-            let binary_annotation = BinaryAnnotation::builder()
-                .endpoint(self.guard.tracer.0.local_endpoint.clone())
-                .build(key, value);
-            binary_annotations.push(binary_annotation);
+        if let SpanState::Real { ref mut span, .. } = self.state {
+            span.tag(key, value);
         }
-    }
-
-    /// "Detaches" this span from the `Tracer`.
-    ///
-    /// The parent of this span is normally re-registered as the `Tracer`'s
-    /// current span when the `OpenSpan` drops. This method will cause that to
-    /// happen immediately. New child spans created from the `Tracer` afterwards
-    /// will be parented to this span's parent rather than this span itself.
-    ///
-    /// This is intended to be used to enable the creation of multiple
-    /// "parallel" spans.
-    pub fn detach(&mut self) {
-        self.guard.detach();
     }
 }
 
@@ -294,36 +151,36 @@ impl Tracer {
     }
 
     /// Starts a new trace with no parent.
-    pub fn new_trace(&self, name: &str) -> OpenSpan {
-        self.ensure_sampled(name, self.next_context(None, None, false), false)
+    pub fn new_trace(&self) -> OpenSpan {
+        self.ensure_sampled(self.next_context(None, None, false), false)
     }
 
     /// Joins an existing trace.
     ///
     /// The context can come from, for example, the headers of an HTTP request.
-    pub fn join_trace(&self, name: &str, context: TraceContext) -> OpenSpan {
-        self.ensure_sampled(name, context, true)
+    pub fn join_trace(&self, context: TraceContext) -> OpenSpan {
+        self.ensure_sampled(context, true)
     }
 
     /// Starts a new span with the specified parent.
-    pub fn new_child(&self, name: &str, parent: TraceContext) -> OpenSpan {
+    pub fn new_child(&self, parent: TraceContext) -> OpenSpan {
         if parent.sampled() == Some(false) {
             return self.new_span(parent, SpanState::Nop);
         }
 
         let context = self.next_context(Some(parent), parent.sampled(), parent.debug());
-        self.ensure_sampled(name, context, false)
+        self.ensure_sampled(context, false)
     }
 
     /// Starts a new trace parented to the current span if one exists.
-    pub fn next_span(&self, name: &str) -> OpenSpan {
+    pub fn next_span(&self) -> OpenSpan {
         match self.current() {
-            Some(context) => self.new_child(name, context),
-            None => self.new_trace(name),
+            Some(context) => self.new_child(context),
+            None => self.new_trace(),
         }
     }
 
-    fn ensure_sampled(&self, name: &str, mut context: TraceContext, mut shared: bool) -> OpenSpan {
+    fn ensure_sampled(&self, mut context: TraceContext, mut shared: bool) -> OpenSpan {
         if let None = context.sampled() {
             context.sampled = Some(self.0.sampler.sample(context.trace_id()));
             // since the thing we got this context from didn't indicate if it should be sampled
@@ -333,16 +190,17 @@ impl Tracer {
 
         let state = match context.sampled() {
             Some(false) => SpanState::Nop,
-            _ => SpanState::Real {
-                name: name.to_string(),
-                start_time: SystemTime::now(),
-                start_instant: Instant::now(),
-                shared,
-                kind: Kind::Local,
-                annotations: vec![],
-                binary_annotations: vec![],
-                annotation_set: 0,
-            },
+            _ => {
+                let mut span = Span::builder();
+                span.timestamp(SystemTime::now())
+                    .shared(shared)
+                    .local_endpoint(self.0.local_endpoint.clone());
+
+                SpanState::Real {
+                    span,
+                    start_instant: Instant::now(),
+                }
+            }
         };
 
         self.new_span(context, state)
@@ -369,7 +227,6 @@ impl Tracer {
         CurrentGuard {
             tracer: self.clone(),
             prev: self.0.current.set(context),
-            done: false,
             _p: PhantomData,
         }
     }

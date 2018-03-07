@@ -13,18 +13,15 @@
 //  limitations under the License.
 
 //! Endpoints.
-use std::net::{Ipv4Addr, Ipv6Addr, IpAddr};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 
-/// An `Endpoint` represents information about a service recording trace
-/// information.
-///
-/// It consists of a service name, an optional IPv4 and/or IPv6 address, and an
-/// optional port.
+/// The network context of a node in the service graph.
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
 pub struct Endpoint {
-    service_name: String,
+    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
+    service_name: Option<String>,
     #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
     ipv4: Option<Ipv4Addr>,
     #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
@@ -37,6 +34,7 @@ impl Endpoint {
     /// Returns a builder type used to construct an `Endpoint`.
     pub fn builder() -> Builder {
         Builder {
+            service_name: None,
             ipv4: None,
             ipv6: None,
             port: None,
@@ -44,14 +42,8 @@ impl Endpoint {
     }
 
     /// Returns the name of the service at this endpoint.
-    pub fn service_name(&self) -> &str {
-        &self.service_name
-    }
-
-    /// Returns the name of the service at this endpoint.
-    #[deprecated(since = "0.1.5", note = "renamed to service_name")]
-    pub fn name(&self) -> &str {
-        self.service_name()
+    pub fn service_name(&self) -> Option<&str> {
+        self.service_name.as_ref().map(|s| &**s)
     }
 
     /// Returns the IPv4 address of the service at this endpoint.
@@ -72,12 +64,21 @@ impl Endpoint {
 
 /// A builder type for `Endpoint`s.
 pub struct Builder {
+    service_name: Option<String>,
     ipv4: Option<Ipv4Addr>,
     ipv6: Option<Ipv6Addr>,
     port: Option<u16>,
 }
 
 impl Builder {
+    /// Sets the service name associated with the endpoint.
+    ///
+    /// Defaults to `None`.
+    pub fn service_name(&mut self, service_name: &str) -> &mut Builder {
+        self.service_name = Some(service_name.to_string());
+        self
+    }
+
     /// Sets the IPv4 address associated with the endpoint.
     ///
     /// Defaults to `None`.
@@ -114,12 +115,12 @@ impl Builder {
     }
 
     /// Constructs the `Endpoint`.
-    pub fn build(&mut self, service_name: &str) -> Endpoint {
+    pub fn build(&self) -> Endpoint {
         Endpoint {
-            service_name: service_name.to_string(),
-            ipv4: self.ipv4.take(),
-            ipv6: self.ipv6.take(),
-            port: self.port.take(),
+            service_name: self.service_name.clone(),
+            ipv4: self.ipv4,
+            ipv6: self.ipv6,
+            port: self.port,
         }
     }
 }
