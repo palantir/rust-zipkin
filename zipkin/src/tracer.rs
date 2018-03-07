@@ -102,6 +102,13 @@ impl OpenSpan {
         self.context
     }
 
+    /// Sets the name of this span.
+    pub fn name(&mut self, name: &str) {
+        if let SpanState::Real { ref mut span, .. } = self.state {
+            span.name(name);
+        }
+    }
+
     /// Sets the kind of this span.
     pub fn kind(&mut self, kind: Kind) {
         if let SpanState::Real { ref mut span, .. } = self.state {
