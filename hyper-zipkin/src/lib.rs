@@ -23,7 +23,7 @@ extern crate hyper;
 use hyper::header::{Formatter, Header, Headers, Raw};
 use std::fmt;
 use std::ops::{Deref, DerefMut};
-use zipkin::{SpanId, TraceContext, TraceId};
+use zipkin::{SamplingFlags, SpanId, TraceContext, TraceId};
 
 header! {
     /// The `X-B3-TraceId` header.
@@ -126,6 +126,30 @@ impl Header for XB3Sampled {
     }
 }
 
+/// Constructs `SamplingFlags` from a set of headers.
+pub fn get_sampling_flags(headers: &Headers) -> SamplingFlags {
+    let mut builder = SamplingFlags::builder();
+
+    if let Some(sampled) = headers.get::<XB3Sampled>() {
+        builder.sampled(sampled.0);
+    }
+
+    if let Some(&XB3Flags) = headers.get::<XB3Flags>() {
+        builder.debug(true);
+    }
+
+    builder.build()
+}
+
+/// Serializes `SamplingFlags` into a set of headers.
+pub fn set_sampling_flags(flags: SamplingFlags, headers: &mut Headers) {
+    if flags.debug() {
+        headers.set(XB3Flags);
+    } else if let Some(sampled) = flags.sampled() {
+        headers.set(XB3Sampled(sampled));
+    }
+}
+
 /// Constructs a `TraceContext` from a set of headers.
 pub fn get_trace_context(headers: &Headers) -> Option<TraceContext> {
     let trace_id = match headers.get::<XB3TraceId>() {
@@ -139,17 +163,10 @@ pub fn get_trace_context(headers: &Headers) -> Option<TraceContext> {
     };
 
     let mut context = TraceContext::builder();
+    context.sampling_flags(get_sampling_flags(headers));
 
     if let Some(parent_id) = headers.get::<XB3ParentSpanId>() {
         context.parent_id(parent_id.0);
-    }
-
-    if let Some(sampled) = headers.get::<XB3Sampled>() {
-        context.sampled(sampled.0);
-    }
-
-    if let Some(&XB3Flags) = headers.get::<XB3Flags>() {
-        context.debug(true);
     }
 
     Some(context.build(trace_id.0, span_id.0))
@@ -164,9 +181,5 @@ pub fn set_trace_context(context: TraceContext, headers: &mut Headers) {
         headers.set(XB3ParentSpanId(parent_id));
     }
 
-    if context.debug() {
-        headers.set(XB3Flags);
-    } else if let Some(sampled) = context.sampled() {
-        headers.set(XB3Sampled(sampled));
-    }
+    set_sampling_flags(context.sampling_flags(), headers);
 }
