@@ -59,6 +59,15 @@ pub struct Builder {
     debug: bool,
 }
 
+impl From<SamplingFlags> for Builder {
+    fn from(flags: SamplingFlags) -> Builder {
+        Builder {
+            sampled: flags.sampled,
+            debug: flags.debug,
+        }
+    }
+}
+
 impl Builder {
     /// Sets the sampling request for this context.
     ///

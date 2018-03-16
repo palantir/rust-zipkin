@@ -55,6 +55,11 @@ impl TraceContext {
         self.span_id
     }
 
+    /// Returns the sampling flags associated with this context.
+    pub fn sampling_flags(&self) -> SamplingFlags {
+        self.flags
+    }
+
     /// Determines if sampling has been requested for this context.
     ///
     /// A value of `None` indicates that the service working in the context is
@@ -84,6 +89,12 @@ impl Builder {
     /// Defaults to `None`.
     pub fn parent_id(&mut self, parent_id: SpanId) -> &mut Builder {
         self.parent_id = Some(parent_id);
+        self
+    }
+
+    /// Sets the sampling flags for this context.
+    pub fn sampling_flags(&mut self, flags: SamplingFlags) -> &mut Builder {
+        self.flags = flags.into();
         self
     }
 
