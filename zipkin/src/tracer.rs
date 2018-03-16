@@ -164,10 +164,6 @@ impl Tracer {
 
     /// Starts a new span with the specified parent.
     pub fn new_child(&self, parent: TraceContext) -> OpenSpan {
-        if parent.sampled() == Some(false) {
-            return self.new_span(parent, SpanState::Nop);
-        }
-
         let context = self.next_context(Some(parent), parent.sampled(), parent.debug());
         self.ensure_sampled(context, false)
     }
