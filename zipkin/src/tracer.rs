@@ -182,7 +182,7 @@ impl Tracer {
 
     fn ensure_sampled(&self, mut context: TraceContext, mut shared: bool) -> OpenSpan {
         if let None = context.sampled() {
-            context.sampled = Some(self.0.sampler.sample(context.trace_id()));
+            context.flags.sampled = Some(self.0.sampler.sample(context.trace_id()));
             // since the thing we got this context from didn't indicate if it should be sampled
             // we can't assume they're recording the start/duration for us.
             shared = false;
