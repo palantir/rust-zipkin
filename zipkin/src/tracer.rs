@@ -20,7 +20,8 @@ use std::sync::Arc;
 use std::time::{Instant, SystemTime};
 use thread_local_object::ThreadLocal;
 
-use {Annotation, Endpoint, Kind, Report, Sample, Span, SpanId, TraceContext, TraceId};
+use {Annotation, Endpoint, Kind, Report, Sample, SamplingFlags, Span, SpanId, TraceContext,
+     TraceId};
 use report::LoggingReporter;
 use sample::AlwaysSampler;
 use span;
@@ -152,7 +153,16 @@ impl Tracer {
 
     /// Starts a new trace with no parent.
     pub fn new_trace(&self) -> OpenSpan {
-        self.ensure_sampled(self.next_context(None, None, false), false)
+        self.new_trace_from(SamplingFlags::default())
+    }
+
+    /// Starts a new trace with no parent with specific sampling flags.
+    pub fn new_trace_from(&self, flags: SamplingFlags) -> OpenSpan {
+        let id = self.next_id();
+        let context = TraceContext::builder()
+            .sampling_flags(flags)
+            .build(TraceId::from(id), SpanId::from(id));
+        self.ensure_sampled(context, false)
     }
 
     /// Joins an existing trace.
@@ -164,11 +174,11 @@ impl Tracer {
 
     /// Starts a new span with the specified parent.
     pub fn new_child(&self, parent: TraceContext) -> OpenSpan {
-        if parent.sampled() == Some(false) {
-            return self.new_span(parent, SpanState::Nop);
-        }
-
-        let context = self.next_context(Some(parent), parent.sampled(), parent.debug());
+        let id = self.next_id();
+        let context = TraceContext::builder()
+            .parent_id(parent.span_id())
+            .sampling_flags(parent.sampling_flags())
+            .build(parent.trace_id(), SpanId::from(id));
         self.ensure_sampled(context, false)
     }
 
@@ -180,11 +190,17 @@ impl Tracer {
         }
     }
 
+    fn next_id(&self) -> [u8; 8] {
+        let mut id = [0; 8];
+        rand::thread_rng().fill_bytes(&mut id);
+        id
+    }
+
     fn ensure_sampled(&self, mut context: TraceContext, mut shared: bool) -> OpenSpan {
         if let None = context.sampled() {
-            context.sampled = Some(self.0.sampler.sample(context.trace_id()));
+            context.flags.sampled = Some(self.0.sampler.sample(context.trace_id()));
             // since the thing we got this context from didn't indicate if it should be sampled
-            // we can't assume they're recording the start/duration for us.
+            // we can't assume they're recording the span as well.
             shared = false;
         }
 
@@ -234,36 +250,6 @@ impl Tracer {
     /// Returns this thread's current trace context.
     pub fn current(&self) -> Option<TraceContext> {
         self.0.current.get_cloned()
-    }
-
-    fn next_context(
-        &self,
-        parent: Option<TraceContext>,
-        mut sampled: Option<bool>,
-        mut debug: bool,
-    ) -> TraceContext {
-        let mut id = [0; 8];
-        rand::thread_rng().fill_bytes(&mut id);
-
-        let mut context = TraceContext::builder();
-        let trace_id = match parent {
-            Some(parent) => {
-                context.parent_id(parent.span_id());
-                sampled = parent.sampled();
-                debug = parent.debug();
-
-                parent.trace_id()
-            }
-            None => TraceId::from(id),
-        };
-
-        context.debug(debug);
-        if let Some(sampled) = sampled {
-            context.sampled(sampled);
-        }
-
-        let span_id = SpanId::from(id);
-        context.build(trace_id, span_id)
     }
 }
 

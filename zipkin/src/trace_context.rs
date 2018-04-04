@@ -13,7 +13,8 @@
 //  limitations under the License.
 
 //! Trace contexts.
-use {TraceId, SpanId};
+use {SamplingFlags, SpanId, TraceId};
+use sampling_flags;
 
 /// A `TraceContext` represents a distributed trace request.
 ///
@@ -27,8 +28,7 @@ pub struct TraceContext {
     trace_id: TraceId,
     parent_id: Option<SpanId>,
     span_id: SpanId,
-    pub(crate) sampled: Option<bool>,
-    debug: bool,
+    pub(crate) flags: SamplingFlags,
 }
 
 impl TraceContext {
@@ -36,8 +36,7 @@ impl TraceContext {
     pub fn builder() -> Builder {
         Builder {
             parent_id: None,
-            sampled: None,
-            debug: false,
+            flags: SamplingFlags::builder(),
         }
     }
 
@@ -56,12 +55,17 @@ impl TraceContext {
         self.span_id
     }
 
+    /// Returns the sampling flags associated with this context.
+    pub fn sampling_flags(&self) -> SamplingFlags {
+        self.flags
+    }
+
     /// Determines if sampling has been requested for this context.
     ///
     /// A value of `None` indicates that the service working in the context is
     /// responsible for determining if it should be sampled.
     pub fn sampled(&self) -> Option<bool> {
-        self.sampled
+        self.flags.sampled()
     }
 
     /// Determines if this context is in debug mode.
@@ -69,15 +73,14 @@ impl TraceContext {
     /// Debug contexts should always be sampled, regardless of the value of
     /// `sampled()`.
     pub fn debug(&self) -> bool {
-        self.debug
+        self.flags.debug()
     }
 }
 
 /// A builder type for `TraceContext`s.
 pub struct Builder {
     parent_id: Option<SpanId>,
-    sampled: Option<bool>,
-    debug: bool,
+    flags: sampling_flags::Builder,
 }
 
 impl Builder {
@@ -89,11 +92,17 @@ impl Builder {
         self
     }
 
+    /// Sets the sampling flags for this context.
+    pub fn sampling_flags(&mut self, flags: SamplingFlags) -> &mut Builder {
+        self.flags = flags.into();
+        self
+    }
+
     /// Sets the sampling request for this context.
     ///
     /// Defaults to `None`.
     pub fn sampled(&mut self, sampled: bool) -> &mut Builder {
-        self.sampled = Some(sampled);
+        self.flags.sampled(sampled);
         self
     }
 
@@ -101,7 +110,7 @@ impl Builder {
     ///
     /// Defaults to `false`.
     pub fn debug(&mut self, debug: bool) -> &mut Builder {
-        self.debug = debug;
+        self.flags.debug(debug);
         self
     }
 
@@ -111,8 +120,7 @@ impl Builder {
             trace_id,
             parent_id: self.parent_id,
             span_id,
-            sampled: if self.debug { Some(true) } else { self.sampled },
-            debug: self.debug,
+            flags: self.flags.build(),
         }
     }
 }

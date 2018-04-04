@@ -52,6 +52,8 @@ pub use report::Report;
 #[doc(inline)]
 pub use sample::Sample;
 #[doc(inline)]
+pub use sampling_flags::SamplingFlags;
+#[doc(inline)]
 pub use span::{Kind, Span};
 #[doc(inline)]
 pub use span_id::SpanId;
@@ -66,6 +68,7 @@ pub mod annotation;
 pub mod endpoint;
 pub mod report;
 pub mod sample;
+pub mod sampling_flags;
 pub mod span;
 pub mod span_id;
 pub mod trace_context;
