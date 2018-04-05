@@ -20,11 +20,11 @@ use std::sync::Arc;
 use std::time::{Instant, SystemTime};
 use thread_local_object::ThreadLocal;
 
-use {Annotation, Endpoint, Kind, Report, Sample, SamplingFlags, Span, SpanId, TraceContext,
-     TraceId};
 use report::LoggingReporter;
 use sample::AlwaysSampler;
 use span;
+use {Annotation, Endpoint, Kind, Report, Sample, SamplingFlags, Span, SpanId, TraceContext,
+     TraceId};
 
 enum SpanState {
     Real {
@@ -98,6 +98,13 @@ impl OpenSpan {
         }
     }
 
+    /// A builder-style version of `name`.
+    #[inline]
+    pub fn with_name(mut self, name: &str) -> OpenSpan {
+        self.name(name);
+        self
+    }
+
     /// Sets the kind of this span.
     pub fn kind(&mut self, kind: Kind) {
         if let SpanState::Real { ref mut span, .. } = self.state {
@@ -105,11 +112,25 @@ impl OpenSpan {
         }
     }
 
+    /// A builder-style version of `kind`.
+    #[inline]
+    pub fn with_kind(mut self, kind: Kind) -> OpenSpan {
+        self.kind(kind);
+        self
+    }
+
     /// Sets the remote endpoint of this span.
     pub fn remote_endpoint(&mut self, remote_endpoint: Endpoint) {
         if let SpanState::Real { ref mut span, .. } = self.state {
             span.remote_endpoint(remote_endpoint);
         }
+    }
+
+    /// A builder-style version of `remote_endpoint`.
+    #[inline]
+    pub fn with_remote_endpoint(mut self, remote_endpoint: Endpoint) -> OpenSpan {
+        self.remote_endpoint(remote_endpoint);
+        self
     }
 
     /// Attaches an annotation to this span.
@@ -120,11 +141,25 @@ impl OpenSpan {
         }
     }
 
+    /// A builder-style verseion of `annotate`.
+    #[inline]
+    pub fn with_annotation(mut self, value: &str) -> OpenSpan {
+        self.annotate(value);
+        self
+    }
+
     /// Attaches a tag to this span.
     pub fn tag(&mut self, key: &str, value: &str) {
         if let SpanState::Real { ref mut span, .. } = self.state {
             span.tag(key, value);
         }
+    }
+
+    /// A builder-style version of `tag`.
+    #[inline]
+    pub fn with_tag(mut self, key: &str, value: &str) -> OpenSpan {
+        self.tag(key, value);
+        self
     }
 }
 
