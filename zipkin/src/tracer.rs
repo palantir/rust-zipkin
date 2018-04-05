@@ -141,7 +141,7 @@ impl OpenSpan {
         }
     }
 
-    /// A builder-style verseion of `annotate`.
+    /// A builder-style version of `annotate`.
     #[inline]
     pub fn with_annotation(mut self, value: &str) -> OpenSpan {
         self.annotate(value);
