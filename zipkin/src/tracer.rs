@@ -26,7 +26,8 @@ use span;
 use {Annotation, Endpoint, Kind, Report, Sample, SamplingFlags, Span, SpanId, TraceContext,
      TraceId};
 
-enum SpanState {
+#[doc(hidden)]
+pub enum SpanState {
     Real {
         span: span::Builder,
         start_instant: Instant,
@@ -86,6 +87,15 @@ impl Drop for OpenSpan {
 }
 
 impl OpenSpan {
+    /// A lower-level way to instantiate an `OpenSpan`, e.g. when producing API wrappers or bindings
+    /// for other languages.
+    /// Prefer Tracer API methods that instantiate spans (e.g. [new_trace](./struct.Tracer.html#method.new_trace)).
+    pub fn new(context: TraceContext, guard: CurrentGuard, state: SpanState) -> Self {
+        Self {
+            context, guard, state
+        }
+    }
+
     /// Returns the context associated with this span.
     pub fn context(&self) -> TraceContext {
         self.context
