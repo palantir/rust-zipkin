@@ -75,6 +75,9 @@ pub mod trace_context;
 pub mod trace_id;
 pub mod tracer;
 
+#[cfg(test)]
+mod test;
+
 #[cfg(feature = "serde")]
 fn time_micros<S>(time: &SystemTime, s: S) -> Result<S::Ok, S::Error>
 where

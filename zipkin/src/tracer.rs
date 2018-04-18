@@ -40,12 +40,25 @@ enum SpanState {
 pub struct CurrentGuard {
     tracer: Tracer,
     prev: Option<TraceContext>,
+    done: bool,
     // make sure this type is !Send and !Sync since it pokes at thread locals
     _p: PhantomData<*const ()>,
 }
 
 impl Drop for CurrentGuard {
     fn drop(&mut self) {
+        if !self.done {
+            self.detach();
+        }
+    }
+}
+
+impl CurrentGuard {
+    fn detach(&mut self) {
+        if self.done {
+            return;
+        }
+
         match self.prev.take() {
             Some(prev) => {
                 self.tracer.0.current.set(prev);
@@ -54,6 +67,7 @@ impl Drop for CurrentGuard {
                 self.tracer.0.current.remove();
             }
         }
+        self.done = true;
     }
 }
 
@@ -160,6 +174,19 @@ impl OpenSpan {
     pub fn with_tag(mut self, key: &str, value: &str) -> OpenSpan {
         self.tag(key, value);
         self
+    }
+
+    /// "Detaches" this span's context from the tracer.
+    ///
+    /// Normally, the previous trace context is restored as the thread's current context when a span
+    /// drops, but calling this method will cause that to happen immediately. The span will still be
+    /// recorded as usual, but new spans created from the tracer will not have this span's context
+    /// as a parent.
+    ///
+    /// This is intended for use when you need to manually maintain the current trace context, for
+    /// example, when working with nonblocking futures.
+    pub fn detach(&mut self) {
+        self.guard.detach();
     }
 }
 
@@ -278,6 +305,7 @@ impl Tracer {
         CurrentGuard {
             tracer: self.clone(),
             prev: self.0.current.set(context),
+            done: false,
             _p: PhantomData,
         }
     }
