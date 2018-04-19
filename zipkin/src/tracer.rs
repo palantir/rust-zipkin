@@ -23,8 +23,71 @@ use thread_local_object::ThreadLocal;
 use report::LoggingReporter;
 use sample::AlwaysSampler;
 use span;
+use tracer::private::Sealed;
 use {Annotation, Endpoint, Kind, Report, Sample, SamplingFlags, Span, SpanId, TraceContext,
      TraceId};
+
+/// A guard object for the thread-local current trace context.
+///
+/// It will restore the previous trace context when it drops.
+pub struct CurrentGuard {
+    tracer: Tracer,
+    prev: Option<TraceContext>,
+    // make sure this type is !Send since it pokes at thread locals
+    _p: PhantomData<*const ()>,
+}
+
+unsafe impl Sync for CurrentGuard {}
+
+impl Drop for CurrentGuard {
+    fn drop(&mut self) {
+        match self.prev.take() {
+            Some(prev) => {
+                self.tracer.0.current.set(prev);
+            }
+            None => {
+                self.tracer.0.current.remove();
+            }
+        }
+    }
+}
+
+mod private {
+    use Tracer;
+
+    pub trait Sealed {
+        fn tracer(&self) -> &Tracer;
+    }
+}
+
+/// A type indicating that an `OpenSpan` is "attached" to the tracer's with respect to context
+/// management.
+pub struct Attached(CurrentGuard);
+
+impl Attachment for Attached {}
+
+impl Sealed for Attached {
+    fn tracer(&self) -> &Tracer {
+        &self.0.tracer
+    }
+}
+
+/// A type indicating that an `OpenSpan` is "detached" from the tracer's with respect to context
+/// management.
+pub struct Detached(Tracer);
+
+impl Attachment for Detached {}
+
+impl Sealed for Detached {
+    fn tracer(&self) -> &Tracer {
+        &self.0
+    }
+}
+
+/// A marker trait for types which parameterize an `OpenSpan`'s attachment.
+///
+/// It is "sealed" such that it cannot be implemented outside of this crate.
+pub trait Attachment: Sealed {}
 
 enum SpanState {
     Real {
@@ -34,54 +97,35 @@ enum SpanState {
     Nop,
 }
 
-/// A guard object for the thread-local current trace context.
-///
-/// It will restore the previous trace context when it drops.
-pub struct CurrentGuard {
-    tracer: Tracer,
-    prev: Option<TraceContext>,
-    done: bool,
-    // make sure this type is !Send and !Sync since it pokes at thread locals
-    _p: PhantomData<*const ()>,
-}
-
-impl Drop for CurrentGuard {
-    fn drop(&mut self) {
-        if !self.done {
-            self.detach();
-        }
-    }
-}
-
-impl CurrentGuard {
-    fn detach(&mut self) {
-        if self.done {
-            return;
-        }
-
-        match self.prev.take() {
-            Some(prev) => {
-                self.tracer.0.current.set(prev);
-            }
-            None => {
-                self.tracer.0.current.remove();
-            }
-        }
-        self.done = true;
-    }
-}
-
 /// An open span.
 ///
 /// This is a guard object - the span will be finished and reported when it
 /// falls out of scope.
-pub struct OpenSpan {
-    guard: CurrentGuard,
+///
+/// Spans can either be "attached" to or "detached" from their tracer. An attached span manages its
+/// tracer's current span - it acts like a `CurrentGuard`. A detached span does not but is `Send`
+/// unlike an attached span. Spans are attached by default, but can be detached or reattached via
+/// the `detach` and `attach` methods.
+///
+/// Detached spans are intended for use when you need to manually maintain the current trace
+/// context. For example, when working with nonblocking futures a single OS thread is managing many
+/// separate tasks. The `futures-zipkin` crate provides a wrapper type which ensures a context is
+/// registered as the current whenever a task is running. If some computation starts executing on
+/// one thread and finishes executing on another, you can detach the span, send it to the other
+/// thread, and then reattach it to properly model that behavior.
+pub struct OpenSpan<T>
+where
+    T: Attachment,
+{
+    attachment: T,
     context: TraceContext,
     state: SpanState,
 }
 
-impl Drop for OpenSpan {
+impl<T> Drop for OpenSpan<T>
+where
+    T: Attachment,
+{
     fn drop(&mut self) {
         if let SpanState::Real {
             mut span,
@@ -95,12 +139,15 @@ impl Drop for OpenSpan {
                 span.parent_id(parent_id);
             }
             let span = span.build();
-            self.guard.tracer.0.reporter.report(&span);
+            self.attachment.tracer().0.reporter.report(&span);
         }
     }
 }
 
-impl OpenSpan {
+impl<T> OpenSpan<T>
+where
+    T: Attachment,
+{
     /// Returns the context associated with this span.
     pub fn context(&self) -> TraceContext {
         self.context
@@ -115,7 +162,7 @@ impl OpenSpan {
 
     /// A builder-style version of `name`.
     #[inline]
-    pub fn with_name(mut self, name: &str) -> OpenSpan {
+    pub fn with_name(mut self, name: &str) -> OpenSpan<T> {
         self.name(name);
         self
     }
@@ -129,7 +176,7 @@ impl OpenSpan {
 
     /// A builder-style version of `kind`.
     #[inline]
-    pub fn with_kind(mut self, kind: Kind) -> OpenSpan {
+    pub fn with_kind(mut self, kind: Kind) -> OpenSpan<T> {
         self.kind(kind);
         self
     }
@@ -143,7 +190,7 @@ impl OpenSpan {
 
     /// A builder-style version of `remote_endpoint`.
     #[inline]
-    pub fn with_remote_endpoint(mut self, remote_endpoint: Endpoint) -> OpenSpan {
+    pub fn with_remote_endpoint(mut self, remote_endpoint: Endpoint) -> OpenSpan<T> {
         self.remote_endpoint(remote_endpoint);
         self
     }
@@ -158,7 +205,7 @@ impl OpenSpan {
 
     /// A builder-style version of `annotate`.
     #[inline]
-    pub fn with_annotation(mut self, value: &str) -> OpenSpan {
+    pub fn with_annotation(mut self, value: &str) -> OpenSpan<T> {
         self.annotate(value);
         self
     }
@@ -172,22 +219,35 @@ impl OpenSpan {
 
     /// A builder-style version of `tag`.
     #[inline]
-    pub fn with_tag(mut self, key: &str, value: &str) -> OpenSpan {
+    pub fn with_tag(mut self, key: &str, value: &str) -> OpenSpan<T> {
         self.tag(key, value);
         self
     }
+}
 
-    /// "Detaches" this span's context from the tracer.
-    ///
-    /// Normally, the previous trace context is restored as the thread's current context when a span
-    /// drops, but calling this method will cause that to happen immediately. The span will still be
-    /// recorded as usual, but new spans created from the tracer will not have this span's context
-    /// as a parent.
-    ///
-    /// This is intended for use when you need to manually maintain the current trace context, for
-    /// example, when working with nonblocking futures.
-    pub fn detach(&mut self) {
-        self.guard.detach();
+impl OpenSpan<Attached> {
+    /// Detaches this span's context from the tracer.
+    #[inline]
+    pub fn detach(mut self) -> OpenSpan<Detached> {
+        OpenSpan {
+            attachment: Detached(self.attachment.tracer().clone()),
+            context: self.context,
+            // since we've swapped in Nop here, self's Drop impl won't do anything
+            state: mem::replace(&mut self.state, SpanState::Nop),
+        }
+    }
+}
+
+impl OpenSpan<Detached> {
+    /// Re-attaches this span's context to the tracer.
+    #[inline]
+    pub fn attach(mut self) -> OpenSpan<Attached> {
+        OpenSpan {
+            attachment: Attached(self.attachment.tracer().set_current(self.context)),
+            context: self.context,
+            // since we've swapped in Nop here, self's Drop impl won't do anything
+            state: mem::replace(&mut self.state, SpanState::Nop),
+        }
     }
 }
 
@@ -215,12 +275,12 @@ impl Tracer {
     }
 
     /// Starts a new trace with no parent.
-    pub fn new_trace(&self) -> OpenSpan {
+    pub fn new_trace(&self) -> OpenSpan<Attached> {
         self.new_trace_from(SamplingFlags::default())
     }
 
     /// Starts a new trace with no parent with specific sampling flags.
-    pub fn new_trace_from(&self, flags: SamplingFlags) -> OpenSpan {
+    pub fn new_trace_from(&self, flags: SamplingFlags) -> OpenSpan<Attached> {
         let id = self.next_id();
         let context = TraceContext::builder()
             .trace_id(TraceId::from(id))
@@ -233,12 +293,12 @@ impl Tracer {
     /// Joins an existing trace.
     ///
     /// The context can come from, for example, the headers of an HTTP request.
-    pub fn join_trace(&self, context: TraceContext) -> OpenSpan {
+    pub fn join_trace(&self, context: TraceContext) -> OpenSpan<Attached> {
         self.ensure_sampled(context, true)
     }
 
     /// Starts a new span with the specified parent.
-    pub fn new_child(&self, parent: TraceContext) -> OpenSpan {
+    pub fn new_child(&self, parent: TraceContext) -> OpenSpan<Attached> {
         let id = self.next_id();
         let context = TraceContext::builder()
             .trace_id(parent.trace_id())
@@ -250,7 +310,7 @@ impl Tracer {
     }
 
     /// Starts a new trace parented to the current span if one exists.
-    pub fn next_span(&self) -> OpenSpan {
+    pub fn next_span(&self) -> OpenSpan<Attached> {
         match self.current() {
             Some(context) => self.new_child(context),
             None => self.new_trace(),
@@ -263,7 +323,7 @@ impl Tracer {
         id
     }
 
-    fn ensure_sampled(&self, mut context: TraceContext, mut shared: bool) -> OpenSpan {
+    fn ensure_sampled(&self, mut context: TraceContext, mut shared: bool) -> OpenSpan<Attached> {
         if let None = context.sampled() {
             context.flags.sampled = Some(self.0.sampler.sample(context.trace_id()));
             // since the thing we got this context from didn't indicate if it should be sampled
@@ -289,11 +349,11 @@ impl Tracer {
         self.new_span(context, state)
     }
 
-    fn new_span(&self, context: TraceContext, state: SpanState) -> OpenSpan {
+    fn new_span(&self, context: TraceContext, state: SpanState) -> OpenSpan<Attached> {
         let guard = self.set_current(context);
 
         OpenSpan {
-            guard,
+            attachment: Attached(guard),
             context,
             state,
         }
@@ -310,7 +370,6 @@ impl Tracer {
         CurrentGuard {
             tracer: self.clone(),
             prev: self.0.current.set(context),
-            done: false,
             _p: PhantomData,
         }
     }
