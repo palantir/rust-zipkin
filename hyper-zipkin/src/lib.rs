@@ -152,24 +152,20 @@ pub fn set_sampling_flags(flags: SamplingFlags, headers: &mut Headers) {
 
 /// Constructs a `TraceContext` from a set of headers.
 pub fn get_trace_context(headers: &Headers) -> Option<TraceContext> {
-    let trace_id = match headers.get::<XB3TraceId>() {
-        Some(trace_id) => trace_id,
-        None => return None,
-    };
-
-    let span_id = match headers.get::<XB3SpanId>() {
-        Some(span_id) => span_id,
-        None => return None,
-    };
+    let trace_id = headers.get::<XB3TraceId>()?.0;
+    let span_id = headers.get::<XB3SpanId>()?.0;
 
     let mut context = TraceContext::builder();
-    context.sampling_flags(get_sampling_flags(headers));
+    context
+        .trace_id(trace_id)
+        .span_id(span_id)
+        .sampling_flags(get_sampling_flags(headers));
 
     if let Some(parent_id) = headers.get::<XB3ParentSpanId>() {
         context.parent_id(parent_id.0);
     }
 
-    Some(context.build(trace_id.0, span_id.0))
+    Some(context.build())
 }
 
 /// Serializes a `TraceContext` into a set of headers.
@@ -182,4 +178,81 @@ pub fn set_trace_context(context: TraceContext, headers: &mut Headers) {
     }
 
     set_sampling_flags(context.sampling_flags(), headers);
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn flags_empty() {
+        let mut headers = Headers::new();
+        let flags = SamplingFlags::builder().build();
+        set_sampling_flags(flags, &mut headers);
+
+        let expected_headers = Headers::new();
+        assert_eq!(headers, expected_headers);
+
+        assert_eq!(get_sampling_flags(&headers), flags);
+    }
+
+    #[test]
+    fn flags_debug() {
+        let mut headers = Headers::new();
+        let flags = SamplingFlags::builder().debug(true).build();
+        set_sampling_flags(flags, &mut headers);
+
+        let mut expected_headers = Headers::new();
+        expected_headers.set_raw("X-B3-Flags", "1");
+        assert_eq!(headers, expected_headers);
+
+        assert_eq!(get_sampling_flags(&headers), flags);
+    }
+
+    #[test]
+    fn flags_sampled() {
+        let mut headers = Headers::new();
+        let flags = SamplingFlags::builder().sampled(true).build();
+        set_sampling_flags(flags, &mut headers);
+
+        let mut expected_headers = Headers::new();
+        expected_headers.set_raw("X-B3-Sampled", "1");
+        assert_eq!(headers, expected_headers);
+
+        assert_eq!(get_sampling_flags(&headers), flags);
+    }
+
+    #[test]
+    fn flags_unsampled() {
+        let mut headers = Headers::new();
+        let flags = SamplingFlags::builder().sampled(false).build();
+        set_sampling_flags(flags, &mut headers);
+
+        let mut expected_headers = Headers::new();
+        expected_headers.set_raw("X-B3-Sampled", "0");
+        assert_eq!(headers, expected_headers);
+
+        assert_eq!(get_sampling_flags(&headers), flags);
+    }
+
+    #[test]
+    fn trace_context() {
+        let mut headers = Headers::new();
+        let context = TraceContext::builder()
+            .trace_id([0, 1, 2, 3, 4, 5, 6, 7].into())
+            .parent_id([1, 2, 3, 4, 5, 6, 7, 8].into())
+            .span_id([2, 3, 4, 5, 6, 7, 8, 9].into())
+            .sampled(true)
+            .build();
+        set_trace_context(context, &mut headers);
+
+        let mut expected_headers = Headers::new();
+        expected_headers.set_raw("X-B3-TraceId", "0001020304050607");
+        expected_headers.set_raw("X-B3-SpanId", "0203040506070809");
+        expected_headers.set_raw("X-B3-ParentSpanId", "0102030405060708");
+        expected_headers.set_raw("X-B3-Sampled", "1");
+        assert_eq!(headers, expected_headers);
+
+        assert_eq!(get_trace_context(&headers), Some(context));
+    }
 }

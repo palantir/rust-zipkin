@@ -13,8 +13,8 @@
 //  limitations under the License.
 
 //! Trace contexts.
-use {SamplingFlags, SpanId, TraceId};
 use sampling_flags;
+use {SamplingFlags, SpanId, TraceId};
 
 /// A `TraceContext` represents a distributed trace request.
 ///
@@ -23,7 +23,7 @@ use sampling_flags;
 ///
 /// The trace context is sent to remote services on requests. For example,
 /// it is included in a standard set of headers in HTTP requests.
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct TraceContext {
     trace_id: TraceId,
     parent_id: Option<SpanId>,
@@ -35,7 +35,9 @@ impl TraceContext {
     /// Returns a builder used to construct a `TraceContext`.
     pub fn builder() -> Builder {
         Builder {
+            trace_id: None,
             parent_id: None,
+            span_id: None,
             flags: SamplingFlags::builder(),
         }
     }
@@ -79,16 +81,41 @@ impl TraceContext {
 
 /// A builder type for `TraceContext`s.
 pub struct Builder {
+    trace_id: Option<TraceId>,
     parent_id: Option<SpanId>,
+    span_id: Option<SpanId>,
     flags: sampling_flags::Builder,
 }
 
+impl From<TraceContext> for Builder {
+    fn from(c: TraceContext) -> Builder {
+        Builder {
+            trace_id: Some(c.trace_id),
+            parent_id: c.parent_id,
+            span_id: Some(c.span_id),
+            flags: c.flags.into(),
+        }
+    }
+}
+
 impl Builder {
+    /// Sets the trace ID of this context.
+    pub fn trace_id(&mut self, trace_id: TraceId) -> &mut Builder {
+        self.trace_id = Some(trace_id);
+        self
+    }
+
     /// Sets the ID of the parent span of this context.
     ///
     /// Defaults to `None`.
     pub fn parent_id(&mut self, parent_id: SpanId) -> &mut Builder {
         self.parent_id = Some(parent_id);
+        self
+    }
+
+    /// Sets the ID of the span of this context.
+    pub fn span_id(&mut self, span_id: SpanId) -> &mut Builder {
+        self.span_id = Some(span_id);
         self
     }
 
@@ -115,11 +142,15 @@ impl Builder {
     }
 
     /// Constructs a `TraceContext`.
-    pub fn build(&self, trace_id: TraceId, span_id: SpanId) -> TraceContext {
+    ///
+    /// # Panics
+    ///
+    /// Panics if `trace_id` or `span_id` was not set.
+    pub fn build(&self) -> TraceContext {
         TraceContext {
-            trace_id,
+            trace_id: self.trace_id.expect("trace ID not set"),
             parent_id: self.parent_id,
-            span_id,
+            span_id: self.span_id.expect("span ID not set"),
             flags: self.flags.build(),
         }
     }
