@@ -88,12 +88,13 @@ impl Drop for OpenSpan {
             start_instant,
         } = mem::replace(&mut self.state, SpanState::Nop)
         {
-            span.duration(start_instant.elapsed());
+            span.trace_id(self.context.trace_id())
+                .id(self.context.span_id())
+                .duration(start_instant.elapsed());
             if let Some(parent_id) = self.context.parent_id() {
                 span.parent_id(parent_id);
             }
-            let span = span.build(self.context.trace_id(), self.context.span_id());
-
+            let span = span.build();
             self.guard.tracer.0.reporter.report(&span);
         }
     }
@@ -222,8 +223,10 @@ impl Tracer {
     pub fn new_trace_from(&self, flags: SamplingFlags) -> OpenSpan {
         let id = self.next_id();
         let context = TraceContext::builder()
+            .trace_id(TraceId::from(id))
+            .span_id(SpanId::from(id))
             .sampling_flags(flags)
-            .build(TraceId::from(id), SpanId::from(id));
+            .build();
         self.ensure_sampled(context, false)
     }
 
@@ -238,9 +241,11 @@ impl Tracer {
     pub fn new_child(&self, parent: TraceContext) -> OpenSpan {
         let id = self.next_id();
         let context = TraceContext::builder()
+            .trace_id(parent.trace_id())
             .parent_id(parent.span_id())
+            .span_id(SpanId::from(id))
             .sampling_flags(parent.sampling_flags())
-            .build(parent.trace_id(), SpanId::from(id));
+            .build();
         self.ensure_sampled(context, false)
     }
 

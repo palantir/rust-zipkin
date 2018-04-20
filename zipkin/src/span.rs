@@ -84,13 +84,15 @@ pub struct Span {
     id: SpanId,
     #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
     kind: Option<Kind>,
-    #[cfg_attr(feature = "serde",
-               serde(skip_serializing_if = "Option::is_none",
-                     serialize_with = "::opt_time_micros"))]
+    #[cfg_attr(
+        feature = "serde",
+        serde(skip_serializing_if = "Option::is_none", serialize_with = "::opt_time_micros")
+    )]
     timestamp: Option<SystemTime>,
-    #[cfg_attr(feature = "serde",
-               serde(skip_serializing_if = "Option::is_none",
-                     serialize_with = "::opt_duration_micros"))]
+    #[cfg_attr(
+        feature = "serde",
+        serde(skip_serializing_if = "Option::is_none", serialize_with = "::opt_duration_micros")
+    )]
     duration: Option<Duration>,
     #[cfg_attr(feature = "serde", serde(skip_serializing_if = "is_false"))]
     debug: bool,
@@ -115,8 +117,10 @@ impl Span {
     /// Returns a builder used to construct a `Span`.
     pub fn builder() -> Builder {
         Builder {
+            trace_id: None,
             name: None,
             parent_id: None,
+            id: None,
             kind: None,
             timestamp: None,
             duration: None,
@@ -212,8 +216,10 @@ impl Span {
 
 /// A builder for `Span`s.
 pub struct Builder {
+    trace_id: Option<TraceId>,
     name: Option<String>,
     parent_id: Option<SpanId>,
+    id: Option<SpanId>,
     kind: Option<Kind>,
     timestamp: Option<SystemTime>,
     duration: Option<Duration>,
@@ -225,7 +231,33 @@ pub struct Builder {
     tags: HashMap<String, String>,
 }
 
+impl From<Span> for Builder {
+    fn from(s: Span) -> Builder {
+        Builder {
+            trace_id: Some(s.trace_id),
+            name: s.name,
+            parent_id: s.parent_id,
+            id: Some(s.id),
+            kind: s.kind,
+            timestamp: s.timestamp,
+            duration: s.duration,
+            debug: s.debug,
+            shared: s.shared,
+            local_endpoint: s.local_endpoint,
+            remote_endpoint: s.remote_endpoint,
+            annotations: s.annotations,
+            tags: s.tags,
+        }
+    }
+}
+
 impl Builder {
+    /// Sets the trace ID of the span.
+    pub fn trace_id(&mut self, trace_id: TraceId) -> &mut Builder {
+        self.trace_id = Some(trace_id);
+        self
+    }
+
     /// Sets the name of the span.
     ///
     /// Defaults to `None`.
@@ -239,6 +271,12 @@ impl Builder {
     /// Defaults to `None`.
     pub fn parent_id(&mut self, parent_id: SpanId) -> &mut Builder {
         self.parent_id = Some(parent_id);
+        self
+    }
+
+    /// Sets the ID of the span.
+    pub fn id(&mut self, id: SpanId) -> &mut Builder {
+        self.id = Some(id);
         self
     }
 
@@ -329,11 +367,15 @@ impl Builder {
     }
 
     /// Constructs a `Span`.
-    pub fn build(&self, trace_id: TraceId, id: SpanId) -> Span {
+    ///
+    /// # Panics
+    ///
+    /// Panics if `trace_id` or `id` was not set.
+    pub fn build(&self) -> Span {
         Span {
-            trace_id,
+            trace_id: self.trace_id.expect("trace ID not set"),
             name: self.name.clone(),
-            id,
+            id: self.id.expect("span ID not set"),
             kind: self.kind,
             parent_id: self.parent_id,
             timestamp: self.timestamp,

@@ -70,6 +70,17 @@ pub struct Builder {
     port: Option<u16>,
 }
 
+impl From<Endpoint> for Builder {
+    fn from(e: Endpoint) -> Builder {
+        Builder {
+            service_name: e.service_name,
+            ipv4: e.ipv4,
+            ipv6: e.ipv6,
+            port: e.port,
+        }
+    }
+}
+
 impl Builder {
     /// Sets the service name associated with the endpoint.
     ///
