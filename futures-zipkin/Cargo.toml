@@ -1,6 +1,6 @@
 [package]
 name = "futures-zipkin"
-version = "0.3.0"
+version = "0.4.0"
 authors = ["Steven Fackler <sfackler@palantir.com>"]
 license = "Apache-2.0"
 description = "Futures support for Zipkin tracing"
