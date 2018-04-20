@@ -13,7 +13,7 @@
 //  limitations under the License.
 
 //! Hyper definitions for Zipkin headers.
-#![doc(html_root_url = "https://docs.rs/hyper-zipkin/0.3")]
+#![doc(html_root_url = "https://docs.rs/hyper-zipkin/0.4")]
 #![warn(missing_docs)]
 extern crate zipkin;
 
