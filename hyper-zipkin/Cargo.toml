@@ -12,4 +12,4 @@ keywords = ["zipkin", "tracing"]
 [dependencies]
 hyper = { version = "0.11", default-features = false }
 
-zipkin = { version = "0.2.1", path = "../zipkin" }
+zipkin = { version = "0.3.0", path = "../zipkin" }
