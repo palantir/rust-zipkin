@@ -21,9 +21,8 @@ fn detach() {
     let parent_trace = parent.context().trace_id();
     let parent_id = parent.context().span_id();
 
-    let mut detached = tracer.next_span().with_name("detached");
+    let detached = tracer.next_span().with_name("detached").detach();
     let detached_id = detached.context().span_id();
-    detached.detach();
 
     let child2 = tracer.next_span().with_name("child2");
     let child2_trace = child2.context().trace_id();
