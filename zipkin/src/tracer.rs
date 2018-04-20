@@ -132,13 +132,7 @@ where
             start_instant,
         } = mem::replace(&mut self.state, SpanState::Nop)
         {
-            span.trace_id(self.context.trace_id())
-                .id(self.context.span_id())
-                .duration(start_instant.elapsed());
-            if let Some(parent_id) = self.context.parent_id() {
-                span.parent_id(parent_id);
-            }
-            let span = span.build();
+            let span = span.duration(start_instant.elapsed()).build();
             self.attachment.tracer().0.reporter.report(&span);
         }
     }
@@ -335,9 +329,15 @@ impl Tracer {
             Some(false) => SpanState::Nop,
             _ => {
                 let mut span = Span::builder();
-                span.timestamp(SystemTime::now())
+                span.trace_id(context.trace_id())
+                    .id(context.span_id())
+                    .timestamp(SystemTime::now())
                     .shared(shared)
                     .local_endpoint(self.0.local_endpoint.clone());
+
+                if let Some(parent_id) = context.parent_id() {
+                    span.parent_id(parent_id);
+                }
 
                 SpanState::Real {
                     span,
