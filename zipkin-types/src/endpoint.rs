@@ -32,6 +32,7 @@ pub struct Endpoint {
 
 impl Endpoint {
     /// Returns a builder type used to construct an `Endpoint`.
+    #[inline]
     pub fn builder() -> Builder {
         Builder {
             service_name: None,
@@ -42,21 +43,25 @@ impl Endpoint {
     }
 
     /// Returns the name of the service at this endpoint.
+    #[inline]
     pub fn service_name(&self) -> Option<&str> {
         self.service_name.as_ref().map(|s| &**s)
     }
 
     /// Returns the IPv4 address of the service at this endpoint.
+    #[inline]
     pub fn ipv4(&self) -> Option<Ipv4Addr> {
         self.ipv4
     }
 
     /// Returns the IPv6 address of the service at this endpoint.
+    #[inline]
     pub fn ipv6(&self) -> Option<Ipv6Addr> {
         self.ipv6
     }
 
     /// Returns the port of the service at this endpoint.
+    #[inline]
     pub fn port(&self) -> Option<u16> {
         self.port
     }
@@ -71,6 +76,7 @@ pub struct Builder {
 }
 
 impl From<Endpoint> for Builder {
+    #[inline]
     fn from(e: Endpoint) -> Builder {
         Builder {
             service_name: e.service_name,
@@ -85,6 +91,7 @@ impl Builder {
     /// Sets the service name associated with the endpoint.
     ///
     /// Defaults to `None`.
+    #[inline]
     pub fn service_name(&mut self, service_name: &str) -> &mut Builder {
         self.service_name = Some(service_name.to_string());
         self
@@ -93,6 +100,7 @@ impl Builder {
     /// Sets the IPv4 address associated with the endpoint.
     ///
     /// Defaults to `None`.
+    #[inline]
     pub fn ipv4(&mut self, ipv4: Ipv4Addr) -> &mut Builder {
         self.ipv4 = Some(ipv4);
         self
@@ -101,6 +109,7 @@ impl Builder {
     /// Sets the IPv6 address associated with the endpoint.
     ///
     /// Defaults to `None`.
+    #[inline]
     pub fn ipv6(&mut self, ipv6: Ipv6Addr) -> &mut Builder {
         self.ipv6 = Some(ipv6);
         self
@@ -110,6 +119,7 @@ impl Builder {
     ///
     /// This is simply a convenience function which delegates to `ipv4` and
     /// `ipv6`.
+    #[inline]
     pub fn ip(&mut self, ip: IpAddr) -> &mut Builder {
         match ip {
             IpAddr::V4(addr) => self.ipv4(addr),
@@ -120,12 +130,14 @@ impl Builder {
     /// Sets the port associated with the endpoint.
     ///
     /// Defaults to `None`.
+    #[inline]
     pub fn port(&mut self, port: u16) -> &mut Builder {
         self.port = Some(port);
         self
     }
 
     /// Constructs the `Endpoint`.
+    #[inline]
     pub fn build(&self) -> Endpoint {
         Endpoint {
             service_name: self.service_name.clone(),

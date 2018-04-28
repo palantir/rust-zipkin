@@ -22,6 +22,7 @@ pub struct SamplingFlags {
 }
 
 impl Default for SamplingFlags {
+    #[inline]
     fn default() -> SamplingFlags {
         SamplingFlags::builder().build()
     }
@@ -29,6 +30,7 @@ impl Default for SamplingFlags {
 
 impl SamplingFlags {
     /// Returns a builder used to construct `SamplingFlags`.
+    #[inline]
     pub fn builder() -> Builder {
         Builder {
             sampled: None,
@@ -40,6 +42,7 @@ impl SamplingFlags {
     ///
     /// A value of `None` indicates that the service working in the context is
     /// responsible for determining if it should be sampled.
+    #[inline]
     pub fn sampled(&self) -> Option<bool> {
         self.sampled
     }
@@ -48,6 +51,7 @@ impl SamplingFlags {
     ///
     /// Debug contexts should always be sampled, regardless of the value of
     /// `sampled()`.
+    #[inline]
     pub fn debug(&self) -> bool {
         self.debug
     }
@@ -60,6 +64,7 @@ pub struct Builder {
 }
 
 impl From<SamplingFlags> for Builder {
+    #[inline]
     fn from(flags: SamplingFlags) -> Builder {
         Builder {
             sampled: flags.sampled,
@@ -72,6 +77,7 @@ impl Builder {
     /// Sets the sampling request for this context.
     ///
     /// Defaults to `None`.
+    #[inline]
     pub fn sampled(&mut self, sampled: bool) -> &mut Builder {
         self.sampled = Some(sampled);
         self
@@ -80,12 +86,14 @@ impl Builder {
     /// Sets the debug flag for this request.
     ///
     /// Defaults to `false`.
+    #[inline]
     pub fn debug(&mut self, debug: bool) -> &mut Builder {
         self.debug = debug;
         self
     }
 
     /// Constructs `SamplingFlags`.
+    #[inline]
     pub fn build(&self) -> SamplingFlags {
         SamplingFlags {
             sampled: if self.debug {

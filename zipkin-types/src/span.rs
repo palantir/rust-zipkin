@@ -122,6 +122,7 @@ fn value_false() -> bool {
 
 impl Span {
     /// Returns a builder used to construct a `Span`.
+    #[inline]
     pub fn builder() -> Builder {
         Builder {
             trace_id: None,
@@ -141,6 +142,7 @@ impl Span {
     }
 
     /// The randomly generated, unique identifier for a trace, set on all spans within it.
+    #[inline]
     pub fn trace_id(&self) -> TraceId {
         self.trace_id
     }
@@ -151,16 +153,19 @@ impl Span {
     ///
     /// These are lookup labels, so take care to ensure names are low cardinality. For example, do
     /// not embed variables into the name.
+    #[inline]
     pub fn name(&self) -> Option<&str> {
         self.name.as_ref().map(|s| &**s)
     }
 
     /// The parent span ID, or `None` if this is the root span in a trace.
+    #[inline]
     pub fn parent_id(&self) -> Option<SpanId> {
         self.parent_id
     }
 
     /// The unique 64 bit identifier for this operation within the trace.
+    #[inline]
     pub fn id(&self) -> SpanId {
         self.id
     }
@@ -168,11 +173,13 @@ impl Span {
     /// The "kind" of operation this span represents.
     ///
     /// When absent, the span is absent or incomplete.
+    #[inline]
     pub fn kind(&self) -> Option<Kind> {
         self.kind
     }
 
     /// The start of the span.
+    #[inline]
     pub fn timestamp(&self) -> Option<SystemTime> {
         self.timestamp
     }
@@ -181,6 +188,7 @@ impl Span {
     ///
     /// Durations are recorded in microseconds, and rounded up to a minimum of 1. Durations of
     /// children can be longer than their parents due to asynchronous operations.
+    #[inline]
     pub fn duration(&self) -> Option<Duration> {
         self.duration
     }
@@ -188,11 +196,13 @@ impl Span {
     /// Determines if this span is part of a normal or forcibly sampled span.
     ///
     /// If true, the span should always be sampled regardless of the sampling configuration.
+    #[inline]
     pub fn debug(&self) -> bool {
         self.debug
     }
 
     /// Determines if this span was started by another tracer (e.g. on a different host).
+    #[inline]
     pub fn shared(&self) -> bool {
         self.shared
     }
@@ -201,21 +211,25 @@ impl Span {
     ///
     /// Instrumentation should always record this. The IP address is usually the site local or
     /// advertised service address. When present, the port indicates the listen port.
+    #[inline]
     pub fn local_endpoint(&self) -> Option<&Endpoint> {
         self.local_endpoint.as_ref()
     }
 
     /// Returns the other side of the connection for RPC or messaging spans.
+    #[inline]
     pub fn remote_endpoint(&self) -> Option<&Endpoint> {
         self.remote_endpoint.as_ref()
     }
 
     /// Returns the annotations associated with this span.
+    #[inline]
     pub fn annotations(&self) -> &[Annotation] {
         &self.annotations
     }
 
     /// Returns tags used to give spans context for search, viewing, and analysis.
+    #[inline]
     pub fn tags(&self) -> &HashMap<String, String> {
         &self.tags
     }
@@ -239,6 +253,7 @@ pub struct Builder {
 }
 
 impl From<Span> for Builder {
+    #[inline]
     fn from(s: Span) -> Builder {
         Builder {
             trace_id: Some(s.trace_id),
@@ -260,6 +275,7 @@ impl From<Span> for Builder {
 
 impl Builder {
     /// Sets the trace ID of the span.
+    #[inline]
     pub fn trace_id(&mut self, trace_id: TraceId) -> &mut Builder {
         self.trace_id = Some(trace_id);
         self
@@ -268,6 +284,7 @@ impl Builder {
     /// Sets the name of the span.
     ///
     /// Defaults to `None`.
+    #[inline]
     pub fn name(&mut self, name: &str) -> &mut Builder {
         self.name = Some(name.to_lowercase());
         self
@@ -276,12 +293,14 @@ impl Builder {
     /// Sets the ID of the span's parent.
     ///
     /// Defaults to `None`.
+    #[inline]
     pub fn parent_id(&mut self, parent_id: SpanId) -> &mut Builder {
         self.parent_id = Some(parent_id);
         self
     }
 
     /// Sets the ID of the span.
+    #[inline]
     pub fn id(&mut self, id: SpanId) -> &mut Builder {
         self.id = Some(id);
         self
@@ -290,6 +309,7 @@ impl Builder {
     /// Sets the kind of the span.
     ///
     /// Defaults to `None`.
+    #[inline]
     pub fn kind(&mut self, kind: Kind) -> &mut Builder {
         self.kind = Some(kind);
         self
@@ -298,6 +318,7 @@ impl Builder {
     /// Sets the time of the beginning of the span.
     ///
     /// Defaults to `None`.
+    #[inline]
     pub fn timestamp(&mut self, timestamp: SystemTime) -> &mut Builder {
         self.timestamp = Some(timestamp);
         self
@@ -306,6 +327,7 @@ impl Builder {
     /// Sets the duration of the span.
     ///
     /// Defaults to `None`.
+    #[inline]
     pub fn duration(&mut self, duration: Duration) -> &mut Builder {
         self.duration = Some(duration);
         self
@@ -314,6 +336,7 @@ impl Builder {
     /// Sets the debug state of the span.
     ///
     /// Defaults to `false`.
+    #[inline]
     pub fn debug(&mut self, debug: bool) -> &mut Builder {
         self.debug = debug;
         self
@@ -322,6 +345,7 @@ impl Builder {
     /// Sets the shared state of the span.
     ///
     /// Defaults to `false`.
+    #[inline]
     pub fn shared(&mut self, shared: bool) -> &mut Builder {
         self.shared = shared;
         self
@@ -330,6 +354,7 @@ impl Builder {
     /// Sets the local endpoint of the span.
     ///
     /// Defaults to `None`.
+    #[inline]
     pub fn local_endpoint(&mut self, local_endpoint: Endpoint) -> &mut Builder {
         self.local_endpoint = Some(local_endpoint);
         self
@@ -338,18 +363,21 @@ impl Builder {
     /// Sets the remote endpoint of the span.
     ///
     /// Defaults to `None`.
+    #[inline]
     pub fn remote_endpoint(&mut self, remote_endpoint: Endpoint) -> &mut Builder {
         self.remote_endpoint = Some(remote_endpoint);
         self
     }
 
     /// Adds an annotation to the span.
+    #[inline]
     pub fn annotation(&mut self, annotation: Annotation) -> &mut Builder {
         self.annotations.push(annotation);
         self
     }
 
     /// Adds multiple annotations to the span.
+    #[inline]
     pub fn annotations<I>(&mut self, annotations: I) -> &mut Builder
     where
         I: IntoIterator<Item = Annotation>,
@@ -359,12 +387,14 @@ impl Builder {
     }
 
     /// Adds a tag to the span.
+    #[inline]
     pub fn tag(&mut self, key: &str, value: &str) -> &mut Builder {
         self.tags.insert(key.to_string(), value.to_string());
         self
     }
 
     /// As multiple tags to the span.
+    #[inline]
     pub fn tags<I>(&mut self, tags: I) -> &mut Builder
     where
         I: IntoIterator<Item = (String, String)>,
@@ -378,6 +408,7 @@ impl Builder {
     /// # Panics
     ///
     /// Panics if `trace_id` or `id` was not set.
+    #[inline]
     pub fn build(&self) -> Span {
         Span {
             trace_id: self.trace_id.expect("trace ID not set"),

@@ -32,6 +32,7 @@ pub struct Annotation {
 
 impl Annotation {
     /// Creates a new `Annotation`.
+    #[inline]
     pub fn new(timestamp: SystemTime, value: &str) -> Annotation {
         Annotation {
             timestamp,
@@ -40,16 +41,19 @@ impl Annotation {
     }
 
     /// Creates a new `Annotation` at the current time.
+    #[inline]
     pub fn now(value: &str) -> Annotation {
         Annotation::new(SystemTime::now(), value)
     }
 
     /// Returns the time at which the annotated event occurred.
+    #[inline]
     pub fn timestamp(&self) -> SystemTime {
         self.timestamp
     }
 
     /// Returns the value of the annotation.
+    #[inline]
     pub fn value(&self) -> &str {
         &self.value
     }
