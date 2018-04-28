@@ -52,50 +52,61 @@ pub mod trace_context;
 pub mod trace_id;
 
 #[cfg(feature = "serde")]
-use serde::{Serialize, Serializer};
-#[cfg(feature = "serde")]
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+mod time_micros {
+    use serde::{Serialize, Serializer};
+    use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-#[cfg(feature = "serde")]
-fn time_micros<S>(time: &SystemTime, s: S) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
-{
-    duration_micros(
-        &time.duration_since(UNIX_EPOCH)
-            .unwrap_or(Duration::from_secs(0)),
-        s,
-    )
-}
+    pub fn to_wire(time: &SystemTime) -> u64 {
+        super::duration_micros::to_wire(&time.duration_since(UNIX_EPOCH)
+            .unwrap_or(Duration::from_secs(0)))
+    }
 
-#[cfg(feature = "serde")]
-fn duration_micros<S>(duration: &Duration, s: S) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
-{
-    let micros = duration.as_secs() * 1_000_000 + duration.subsec_nanos() as u64 / 1_000;
-    let micros = micros.max(1);
-    micros.serialize(s)
-}
-
-#[cfg(feature = "serde")]
-fn opt_time_micros<S>(time: &Option<SystemTime>, s: S) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
-{
-    match *time {
-        Some(ref time) => time_micros(time, s),
-        None => s.serialize_none(),
+    pub fn serialize<S>(time: &SystemTime, s: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        to_wire(time).serialize(s)
     }
 }
 
 #[cfg(feature = "serde")]
-fn opt_duration_micros<S>(duration: &Option<Duration>, s: S) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
-{
-    match *duration {
-        Some(ref duration) => duration_micros(duration, s),
-        None => s.serialize_none(),
+mod duration_micros {
+    use std::time::Duration;
+
+    pub fn to_wire(duration: &Duration) -> u64 {
+        let micros = duration.as_secs() * 1_000_000 + duration.subsec_nanos() as u64 / 1_000;
+        micros.max(1)
+    }
+}
+
+#[cfg(feature = "serde")]
+mod opt_time_micros {
+    use serde::Serializer;
+    use std::time::SystemTime;
+
+    pub fn serialize<S>(time: &Option<SystemTime>, s: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match *time {
+            Some(ref time) => s.serialize_some(&super::time_micros::to_wire(time)),
+            None => s.serialize_none(),
+        }
+    }
+}
+
+#[cfg(feature = "serde")]
+mod opt_duration_micros {
+    use serde::Serializer;
+    use std::time::Duration;
+
+    pub fn serialize<S>(duration: &Option<Duration>, s: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match *duration {
+            Some(ref duration) => s.serialize_some(&super::duration_micros::to_wire(duration)),
+            None => s.serialize_none(),
+        }
     }
 }

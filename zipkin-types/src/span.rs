@@ -86,12 +86,12 @@ pub struct Span {
     kind: Option<Kind>,
     #[cfg_attr(
         feature = "serde",
-        serde(skip_serializing_if = "Option::is_none", serialize_with = "::opt_time_micros")
+        serde(skip_serializing_if = "Option::is_none", with = "::opt_time_micros")
     )]
     timestamp: Option<SystemTime>,
     #[cfg_attr(
         feature = "serde",
-        serde(skip_serializing_if = "Option::is_none", serialize_with = "::opt_duration_micros")
+        serde(skip_serializing_if = "Option::is_none", with = "::opt_duration_micros")
     )]
     duration: Option<Duration>,
     #[cfg_attr(feature = "serde", serde(skip_serializing_if = "is_false"))]
