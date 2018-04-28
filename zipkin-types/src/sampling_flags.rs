@@ -17,7 +17,7 @@
 /// Flags used to control sampling.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct SamplingFlags {
-    pub(crate) sampled: Option<bool>,
+    sampled: Option<bool>,
     debug: bool,
 }
 

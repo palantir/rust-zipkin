@@ -15,7 +15,7 @@
 //! Hyper definitions for Zipkin headers.
 #![doc(html_root_url = "https://docs.rs/hyper-zipkin/0.4")]
 #![warn(missing_docs)]
-extern crate zipkin;
+extern crate zipkin_types;
 
 #[macro_use]
 extern crate hyper;
@@ -23,7 +23,7 @@ extern crate hyper;
 use hyper::header::{Formatter, Header, Headers, Raw};
 use std::fmt;
 use std::ops::{Deref, DerefMut};
-use zipkin::{SamplingFlags, SpanId, TraceContext, TraceId};
+use zipkin_types::{SamplingFlags, SpanId, TraceContext, TraceId};
 
 header! {
     /// The `X-B3-TraceId` header.

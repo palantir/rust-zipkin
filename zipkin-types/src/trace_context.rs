@@ -28,7 +28,7 @@ pub struct TraceContext {
     trace_id: TraceId,
     parent_id: Option<SpanId>,
     span_id: SpanId,
-    pub(crate) flags: SamplingFlags,
+    flags: SamplingFlags,
 }
 
 impl TraceContext {
