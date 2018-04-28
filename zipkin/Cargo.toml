@@ -9,9 +9,12 @@ readme = "../README.md"
 categories = ["network-programming", "web-programming"]
 keywords = ["zipkin", "tracing"]
 
+[features]
+serde = ["zipkin-types/serde"]
+
 [dependencies]
-data-encoding = "2.1"
 log = "0.4"
 rand = "0.4"
-serde = { version = "1.0", optional = true, features = ["derive"] }
 thread-local-object = "0.1"
+
+zipkin-types = { version = "0.1.0", path = "../zipkin-types" }

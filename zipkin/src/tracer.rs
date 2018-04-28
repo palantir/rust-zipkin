@@ -23,6 +23,7 @@ use thread_local_object::ThreadLocal;
 use report::LoggingReporter;
 use sample::AlwaysSampler;
 use span;
+use trace_context;
 use tracer::private::Sealed;
 use {Annotation, Endpoint, Kind, Report, Sample, SamplingFlags, Span, SpanId, TraceContext,
      TraceId};
@@ -319,7 +320,9 @@ impl Tracer {
 
     fn ensure_sampled(&self, mut context: TraceContext, mut shared: bool) -> OpenSpan<Attached> {
         if let None = context.sampled() {
-            context.flags.sampled = Some(self.0.sampler.sample(context.trace_id()));
+            context = trace_context::Builder::from(context)
+                .sampled(self.0.sampler.sample(context.trace_id()))
+                .build();
             // since the thing we got this context from didn't indicate if it should be sampled
             // we can't assume they're recording the span as well.
             shared = false;

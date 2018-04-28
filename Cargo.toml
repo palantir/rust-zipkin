@@ -2,5 +2,6 @@
 members = [
     "futures-zipkin",
     "hyper-zipkin",
-    "zipkin"
+    "zipkin",
+    "zipkin-types",
 ]
