@@ -4,13 +4,19 @@
 
 A collection of crates to support the Zipkin distributed tracing system.
 
+## zipkin-types
+
+[Documentation](https://docs.rs/zipkin-types)
+
+The zipkin-types crate defines Rust types corresponding to Zipkin's object
+schema.
+
 ## zipkin
 
 [Documentation](https://docs.rs/zipkin)
 
-The zipkin crate defines Rust types corresponding to Zipkin's object schema, as
-well as a `Tracer` object which handles the heavy lifting of creating and
-recording Zipkin spans.
+The zipkin crate defines a `Tracer` object which handles the heavy lifting of
+creating and recording Zipkin spans.
 
 ## futures-zipkin
 
