@@ -144,11 +144,13 @@ where
     T: Attachment,
 {
     /// Returns the context associated with this span.
+    #[inline]
     pub fn context(&self) -> TraceContext {
         self.context
     }
 
     /// Sets the name of this span.
+    #[inline]
     pub fn name(&mut self, name: &str) {
         if let SpanState::Real { ref mut span, .. } = self.state {
             span.name(name);
@@ -163,6 +165,7 @@ where
     }
 
     /// Sets the kind of this span.
+    #[inline]
     pub fn kind(&mut self, kind: Kind) {
         if let SpanState::Real { ref mut span, .. } = self.state {
             span.kind(kind);
@@ -177,6 +180,7 @@ where
     }
 
     /// Sets the remote endpoint of this span.
+    #[inline]
     pub fn remote_endpoint(&mut self, remote_endpoint: Endpoint) {
         if let SpanState::Real { ref mut span, .. } = self.state {
             span.remote_endpoint(remote_endpoint);
@@ -191,6 +195,7 @@ where
     }
 
     /// Attaches an annotation to this span.
+    #[inline]
     pub fn annotate(&mut self, value: &str) {
         if let SpanState::Real { ref mut span, .. } = self.state {
             let annotation = Annotation::now(value);
@@ -206,6 +211,7 @@ where
     }
 
     /// Attaches a tag to this span.
+    #[inline]
     pub fn tag(&mut self, key: &str, value: &str) {
         if let SpanState::Real { ref mut span, .. } = self.state {
             span.tag(key, value);
