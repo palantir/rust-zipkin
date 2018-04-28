@@ -22,10 +22,10 @@ use std::time::SystemTime;
 /// Zipkin v1 core annotations such as "cs" and "sr" have been replaced with
 /// `Span::kind`, which interprets timestamp and duration.
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde", derive(Serialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
 pub struct Annotation {
-    #[cfg_attr(feature = "serde", serde(serialize_with = "::time_micros"))]
+    #[cfg_attr(feature = "serde", serde(with = "::time_micros"))]
     timestamp: SystemTime,
     value: String,
 }
