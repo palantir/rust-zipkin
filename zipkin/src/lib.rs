@@ -44,7 +44,7 @@ pub use report::Report;
 #[doc(inline)]
 pub use sample::Sample;
 #[doc(inline)]
-pub use tracer::{OpenSpan, Tracer};
+pub use tracer::{Attached, Attachment, Detached, OpenSpan, Tracer};
 
 pub mod report;
 pub mod sample;
