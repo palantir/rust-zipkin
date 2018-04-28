@@ -13,9 +13,7 @@
 //  limitations under the License.
 
 //! Trace IDs.
-use data_encoding::{HEXLOWER_PERMISSIVE, DecodeError};
-#[cfg(feature = "serde")]
-use serde::{Serialize, Serializer};
+use data_encoding::{DecodeError, HEXLOWER_PERMISSIVE};
 use std::error::Error;
 use std::fmt;
 use std::str::FromStr;
@@ -69,12 +67,47 @@ impl FromStr for TraceId {
 }
 
 #[cfg(feature = "serde")]
-impl Serialize for TraceId {
-    fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        s.collect_str(self)
+mod serde {
+    use serde::de::{Error, Unexpected, Visitor};
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+    use std::fmt;
+
+    use trace_id::TraceId;
+
+    impl Serialize for TraceId {
+        fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            s.collect_str(self)
+        }
+    }
+
+    impl<'de> Deserialize<'de> for TraceId {
+        fn deserialize<D>(d: D) -> Result<TraceId, D::Error>
+        where
+            D: Deserializer<'de>,
+        {
+            d.deserialize_str(V)
+        }
+    }
+
+    struct V;
+
+    impl<'de> Visitor<'de> for V {
+        type Value = TraceId;
+
+        fn expecting(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+            fmt.write_str("a hex-encoded trace ID")
+        }
+
+        fn visit_str<E>(self, v: &str) -> Result<TraceId, E>
+        where
+            E: Error,
+        {
+            v.parse()
+                .map_err(|_| Error::invalid_value(Unexpected::Str(v), &self))
+        }
     }
 }
 

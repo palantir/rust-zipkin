@@ -19,7 +19,7 @@
 //! # Serialization
 //!
 //! If the `serde` Cargo feature is enabled, `Annotation`, `Endpoint`, `Kind`, `Span`, `SpanId`, and
-//! `TraceId` implement `Serialize` in the standard Zipkin format.
+//! `TraceId` implement `Serialize` and `Deserialize` in the standard Zipkin format.
 //!
 //! [specification]: https://github.com/openzipkin/zipkin-api/blob/master/zipkin2-api.yaml
 extern crate data_encoding;
@@ -53,7 +53,7 @@ pub mod trace_id;
 
 #[cfg(feature = "serde")]
 mod time_micros {
-    use serde::{Serialize, Serializer};
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
     use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
     pub fn to_wire(time: &SystemTime) -> u64 {
@@ -61,11 +61,23 @@ mod time_micros {
             .unwrap_or(Duration::from_secs(0)))
     }
 
+    pub fn from_wire(time: u64) -> SystemTime {
+        let duration = super::duration_micros::from_wire(time);
+        UNIX_EPOCH + duration
+    }
+
     pub fn serialize<S>(time: &SystemTime, s: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
         to_wire(time).serialize(s)
+    }
+
+    pub fn deserialize<'de, D>(d: D) -> Result<SystemTime, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        u64::deserialize(d).map(from_wire)
     }
 }
 
@@ -77,11 +89,17 @@ mod duration_micros {
         let micros = duration.as_secs() * 1_000_000 + duration.subsec_nanos() as u64 / 1_000;
         micros.max(1)
     }
+
+    pub fn from_wire(duration: u64) -> Duration {
+        let seconds = duration / 1_000_000;
+        let subsec_nanos = (duration % 1_000_000) * 1_000;
+        Duration::new(seconds, subsec_nanos as u32)
+    }
 }
 
 #[cfg(feature = "serde")]
 mod opt_time_micros {
-    use serde::Serializer;
+    use serde::{Deserialize, Deserializer, Serializer};
     use std::time::SystemTime;
 
     pub fn serialize<S>(time: &Option<SystemTime>, s: S) -> Result<S::Ok, S::Error>
@@ -93,11 +111,18 @@ mod opt_time_micros {
             None => s.serialize_none(),
         }
     }
+
+    pub fn deserialize<'de, D>(d: D) -> Result<Option<SystemTime>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        Option::<u64>::deserialize(d).map(|o| o.map(super::time_micros::from_wire))
+    }
 }
 
 #[cfg(feature = "serde")]
 mod opt_duration_micros {
-    use serde::Serializer;
+    use serde::{Deserialize, Deserializer, Serializer};
     use std::time::Duration;
 
     pub fn serialize<S>(duration: &Option<Duration>, s: S) -> Result<S::Ok, S::Error>
@@ -108,5 +133,12 @@ mod opt_duration_micros {
             Some(ref duration) => s.serialize_some(&super::duration_micros::to_wire(duration)),
             None => s.serialize_none(),
         }
+    }
+
+    pub fn deserialize<'de, D>(d: D) -> Result<Option<Duration>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        Option::<u64>::deserialize(d).map(|o| o.map(super::duration_micros::from_wire))
     }
 }

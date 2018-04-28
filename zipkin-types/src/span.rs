@@ -23,7 +23,7 @@ use {Annotation, Endpoint, SpanId, TraceId};
 /// This has an impact on the relationship between the span's timestamp, duration, and local
 /// endpoint.
 #[derive(Debug, Copy, Clone)]
-#[cfg_attr(feature = "serde", derive(Serialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "SCREAMING_SNAKE_CASE"))]
 pub enum Kind {
     /// The client side of an RPC.
@@ -56,7 +56,7 @@ pub enum Kind {
     Consumer,
 
     #[doc(hidden)]
-    #[cfg_attr(feature = "serde", serde(skip_serializing))]
+    #[cfg_attr(feature = "serde", serde(skip_serializing, skip_deserializing))]
     __NonExhaustive,
 }
 
@@ -73,7 +73,7 @@ pub enum Kind {
 /// server may both add their own annotations and binary annotations the span -
 /// they will be merged.
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde", derive(Serialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
 pub struct Span {
     trace_id: TraceId,
@@ -94,23 +94,30 @@ pub struct Span {
         serde(skip_serializing_if = "Option::is_none", with = "::opt_duration_micros")
     )]
     duration: Option<Duration>,
-    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "is_false"))]
+    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "is_false", default = "value_false"))]
     debug: bool,
-    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "is_false"))]
+    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "is_false", default = "value_false"))]
     shared: bool,
     #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
     local_endpoint: Option<Endpoint>,
     #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
     remote_endpoint: Option<Endpoint>,
-    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Vec::is_empty"))]
+    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Vec::is_empty", default))]
     annotations: Vec<Annotation>,
-    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "HashMap::is_empty"))]
+    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "HashMap::is_empty", default))]
     tags: HashMap<String, String>,
 }
 
 #[cfg(feature = "serde")]
+#[inline]
 fn is_false(v: &bool) -> bool {
     !*v
+}
+
+#[cfg(feature = "serde")]
+#[inline]
+fn value_false() -> bool {
+    false
 }
 
 impl Span {

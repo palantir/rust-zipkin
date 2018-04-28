@@ -17,7 +17,7 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 
 /// The network context of a node in the service graph.
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde", derive(Serialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
 pub struct Endpoint {
     #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
