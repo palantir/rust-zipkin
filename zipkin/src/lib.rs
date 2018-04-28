@@ -20,7 +20,7 @@
 //! # Serialization
 //!
 //! If the `serde` Cargo feature is enabled, `Annotation`, `Endpoint`, `Kind`, `Span`, `SpanId`, and
-//! `TraceId` implement `Serialize` in the standard Zipkin format.
+//! `TraceId` implement `Serialize` and `Deserialize` in the standard Zipkin format.
 //!
 //! [Zipkin]: http://zipkin.io/
 //! [specification]: https://github.com/openzipkin/zipkin-api/blob/master/zipkin2-api.yaml
