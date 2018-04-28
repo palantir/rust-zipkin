@@ -33,6 +33,7 @@ pub struct TraceContext {
 
 impl TraceContext {
     /// Returns a builder used to construct a `TraceContext`.
+    #[inline]
     pub fn builder() -> Builder {
         Builder {
             trace_id: None,
@@ -43,21 +44,25 @@ impl TraceContext {
     }
 
     /// Returns the ID of the trace associated with this context.
+    #[inline]
     pub fn trace_id(&self) -> TraceId {
         self.trace_id
     }
 
     /// Returns the ID of the parent of the span associated with this context.
+    #[inline]
     pub fn parent_id(&self) -> Option<SpanId> {
         self.parent_id
     }
 
     /// Returns the ID of the span associated with this context.
+    #[inline]
     pub fn span_id(&self) -> SpanId {
         self.span_id
     }
 
     /// Returns the sampling flags associated with this context.
+    #[inline]
     pub fn sampling_flags(&self) -> SamplingFlags {
         self.flags
     }
@@ -66,6 +71,7 @@ impl TraceContext {
     ///
     /// A value of `None` indicates that the service working in the context is
     /// responsible for determining if it should be sampled.
+    #[inline]
     pub fn sampled(&self) -> Option<bool> {
         self.flags.sampled()
     }
@@ -74,6 +80,7 @@ impl TraceContext {
     ///
     /// Debug contexts should always be sampled, regardless of the value of
     /// `sampled()`.
+    #[inline]
     pub fn debug(&self) -> bool {
         self.flags.debug()
     }
@@ -88,6 +95,7 @@ pub struct Builder {
 }
 
 impl From<TraceContext> for Builder {
+    #[inline]
     fn from(c: TraceContext) -> Builder {
         Builder {
             trace_id: Some(c.trace_id),
@@ -100,6 +108,7 @@ impl From<TraceContext> for Builder {
 
 impl Builder {
     /// Sets the trace ID of this context.
+    #[inline]
     pub fn trace_id(&mut self, trace_id: TraceId) -> &mut Builder {
         self.trace_id = Some(trace_id);
         self
@@ -108,18 +117,21 @@ impl Builder {
     /// Sets the ID of the parent span of this context.
     ///
     /// Defaults to `None`.
+    #[inline]
     pub fn parent_id(&mut self, parent_id: SpanId) -> &mut Builder {
         self.parent_id = Some(parent_id);
         self
     }
 
     /// Sets the ID of the span of this context.
+    #[inline]
     pub fn span_id(&mut self, span_id: SpanId) -> &mut Builder {
         self.span_id = Some(span_id);
         self
     }
 
     /// Sets the sampling flags for this context.
+    #[inline]
     pub fn sampling_flags(&mut self, flags: SamplingFlags) -> &mut Builder {
         self.flags = flags.into();
         self
@@ -128,6 +140,7 @@ impl Builder {
     /// Sets the sampling request for this context.
     ///
     /// Defaults to `None`.
+    #[inline]
     pub fn sampled(&mut self, sampled: bool) -> &mut Builder {
         self.flags.sampled(sampled);
         self
@@ -136,6 +149,7 @@ impl Builder {
     /// Sets the debug flag for this request.
     ///
     /// Defaults to `false`.
+    #[inline]
     pub fn debug(&mut self, debug: bool) -> &mut Builder {
         self.flags.debug(debug);
         self
@@ -146,6 +160,7 @@ impl Builder {
     /// # Panics
     ///
     /// Panics if `trace_id` or `span_id` was not set.
+    #[inline]
     pub fn build(&self) -> TraceContext {
         TraceContext {
             trace_id: self.trace_id.expect("trace ID not set"),

@@ -113,6 +113,7 @@ mod serde {
 
 impl TraceId {
     /// Returns the byte representation of the trace ID.
+    #[inline]
     pub fn bytes(&self) -> &[u8] {
         match self.0 {
             Inner::Short(ref buf) => buf,
@@ -122,12 +123,14 @@ impl TraceId {
 }
 
 impl From<[u8; 8]> for TraceId {
+    #[inline]
     fn from(bytes: [u8; 8]) -> TraceId {
         TraceId(Inner::Short(bytes))
     }
 }
 
 impl From<[u8; 16]> for TraceId {
+    #[inline]
     fn from(bytes: [u8; 16]) -> TraceId {
         TraceId(Inner::Long(bytes))
     }

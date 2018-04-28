@@ -100,12 +100,14 @@ mod serde {
 
 impl SpanId {
     /// Returns the bytes of the span ID.
+    #[inline]
     pub fn bytes(&self) -> &[u8] {
         &self.buf
     }
 }
 
 impl From<[u8; 8]> for SpanId {
+    #[inline]
     fn from(bytes: [u8; 8]) -> SpanId {
         SpanId { buf: bytes }
     }
