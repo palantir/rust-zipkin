@@ -22,6 +22,8 @@
 //! `TraceId` implement `Serialize` and `Deserialize` in the standard Zipkin format.
 //!
 //! [specification]: https://github.com/openzipkin/zipkin-api/blob/master/zipkin2-api.yaml
+#![doc(html_root_url = "https://docs.rs/zipkin-types/0.1")]
+#![warn(missing_docs)]
 extern crate data_encoding;
 
 #[cfg(feature = "serde")]
