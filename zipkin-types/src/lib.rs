@@ -35,22 +35,16 @@ pub use annotation::Annotation;
 #[doc(inline)]
 pub use endpoint::Endpoint;
 #[doc(inline)]
-pub use sampling_flags::SamplingFlags;
-#[doc(inline)]
 pub use span::{Kind, Span};
 #[doc(inline)]
 pub use span_id::SpanId;
-#[doc(inline)]
-pub use trace_context::TraceContext;
 #[doc(inline)]
 pub use trace_id::TraceId;
 
 pub mod annotation;
 pub mod endpoint;
-pub mod sampling_flags;
 pub mod span;
 pub mod span_id;
-pub mod trace_context;
 pub mod trace_id;
 
 #[cfg(feature = "serde")]

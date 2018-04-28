@@ -35,19 +35,24 @@ extern crate zipkin_types;
 extern crate log;
 
 #[doc(inline)]
-pub use zipkin_types::{annotation, endpoint, sampling_flags, span, span_id, trace_context,
-                       trace_id, Annotation, Endpoint, Kind, SamplingFlags, Span, SpanId,
-                       TraceContext, TraceId};
+pub use zipkin_types::{annotation, endpoint, span, span_id, trace_id, Annotation, Endpoint, Kind,
+                       Span, SpanId, TraceId};
 
 #[doc(inline)]
 pub use report::Report;
 #[doc(inline)]
 pub use sample::Sample;
 #[doc(inline)]
+pub use sampling_flags::SamplingFlags;
+#[doc(inline)]
+pub use trace_context::TraceContext;
+#[doc(inline)]
 pub use tracer::{Attached, Attachment, Detached, OpenSpan, Tracer};
 
 pub mod report;
 pub mod sample;
+pub mod sampling_flags;
+pub mod trace_context;
 pub mod tracer;
 
 #[cfg(test)]
