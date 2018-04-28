@@ -172,7 +172,7 @@ impl Span {
 
     /// The "kind" of operation this span represents.
     ///
-    /// When absent, the span is absent or incomplete.
+    /// When absent, the span is local or incomplete.
     #[inline]
     pub fn kind(&self) -> Option<Kind> {
         self.kind
