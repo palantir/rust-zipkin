@@ -25,8 +25,9 @@ use sample::AlwaysSampler;
 use span;
 use trace_context;
 use tracer::private::Sealed;
-use {Annotation, Endpoint, Kind, Report, Sample, SamplingFlags, Span, SpanId, TraceContext,
-     TraceId};
+use {
+    Annotation, Endpoint, Kind, Report, Sample, SamplingFlags, Span, SpanId, TraceContext, TraceId,
+};
 
 /// A guard object for the thread-local current trace context.
 ///
@@ -320,7 +321,7 @@ impl Tracer {
 
     fn next_id(&self) -> [u8; 8] {
         let mut id = [0; 8];
-        rand::thread_rng().fill_bytes(&mut id);
+        rand::thread_rng().fill(&mut id);
         id
     }
 
@@ -414,11 +415,13 @@ impl Builder {
 
     /// Constructs a new `Tracer`.
     pub fn build(&mut self, local_endpoint: Endpoint) -> Tracer {
-        let reporter = self.reporter
+        let reporter = self
+            .reporter
             .take()
             .unwrap_or_else(|| Box::new(LoggingReporter));
 
-        let sampler = self.sampler
+        let sampler = self
+            .sampler
             .take()
             .unwrap_or_else(|| Box::new(AlwaysSampler));
 
