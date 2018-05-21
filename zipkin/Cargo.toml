@@ -14,7 +14,7 @@ serde = ["zipkin-types/serde"]
 
 [dependencies]
 log = "0.4"
-rand = "0.4"
+rand = "0.5"
 thread-local-object = "0.1"
 
 zipkin-types = { version = "0.1.0", path = "../zipkin-types" }
