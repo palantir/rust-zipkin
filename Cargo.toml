@@ -1,7 +1,7 @@
 [workspace]
 members = [
     "futures-zipkin",
-    "hyper-zipkin",
+    "http-zipkin",
     "zipkin",
     "zipkin-types",
 ]
