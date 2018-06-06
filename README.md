@@ -26,14 +26,13 @@ The futures-zipkin crate provides an adaptor type which bridges the thread-based
 `Tracer` and the nonblocking `futures` world. It ensures that a `TraceContext`
 is registered while the inner `Future`, `Stream`, or `Sink` is running.
 
-## hyper-zipkin
+## http-zipkin
 
-[Documentation](https://docs.rs/hyper-zipkin)
+[Documentation](https://docs.rs/http-zipkin)
 
-The hyper-zipkin crate defines Hyper header types corresponding to the standard
-headers used for propagation of Zipkin trace contexts thorough remote calls, as
-well as functions to serialize and deserialize zipkin `TraceContext` values
-into and out of Hyper `Headers` collections.
+The http-zipkin crate provides functions to serialize and deserialize zipkin
+`TraceContext` and `SamplingFlags` values into and out of http `HeaderMap`
+collections to propagate traces across HTTP requests.
 
 ## License
 

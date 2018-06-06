@@ -1,15 +1,14 @@
 [package]
-name = "hyper-zipkin"
-version = "0.4.0"
+name = "http-zipkin"
+version = "0.1.0"
 authors = ["Steven Fackler <sfackler@palantir.com>"]
 license = "Apache-2.0"
-description = "Hyper header definitions for standard Zipkin headers"
+description = "HTTP header propagation for Zipkin trace information."
 repository = "https://github.com/palantir/rust-zipkin"
 readme = "../README.md"
 categories = ["web-programming"]
 keywords = ["zipkin", "tracing"]
 
 [dependencies]
-hyper = { version = "0.11", default-features = false }
-
-zipkin = { version = "0.3.0", path = "../zipkin" }
+http = "0.1"
+zipkin = "0.3"
