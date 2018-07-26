@@ -1,3 +1,28 @@
+#![forbid(unsafe_code)]
+#![deny(missing_docs)]
+
+//! A zipkin http reporter allows reporting spans from rust to a zipkin instance via [v2 spans api](https://zipkin.io/zipkin-api/#/default/post_spans). 
+//! Spans are buffered in an internal queue and processed in batches. This way reporting is fast and
+//! should never block the reporting thread. The actual work can either be done in a background
+//! thread or an existing future executor.
+//!
+//! # Example
+//!
+//! ```
+//! extern crate zipkin;
+//! extern crate zipkin_reporter_http;
+//! extern crate http;
+//! use std::str::FromStr;
+//! use zipkin_reporter_http::Builder;
+//!
+//! // Create a repoter with a dedictaed processing thread.
+//! let (_join, reporter) = Builder::new( http::Uri::from_str( "http://zipkin:9411" ).unwrap() )
+//!     .start_thread( |e| eprint!["error reporting spans: {}", e] );
+//! let tracer = zipkin::Tracer::builder()
+//!     .reporter( Box::new( reporter ) )
+//!     .build( zipkin::Endpoint::builder().build() );
+//! ```
+
 extern crate bytes;
 extern crate futures;
 extern crate http;
@@ -12,57 +37,60 @@ use futures::sync::mpsc;
 
 use std::thread;
 use std::sync::Mutex;
+use std::str::FromStr;
 
 mod error;
-mod span_body;
 
 pub use error::Error;
 use error::ErrorInner;
-
-pub use span_body::SpanBody;
 
 /// A reporter reporting to a zipkin server via http.
 ///
 /// Internally it uses a queue to batch traces and send them in the background.
 /// The queue is always bounded to protect against memory shortage.
 /// This also means that this reporter may drop spans if it can't report them.
-///
-/// # Example
-///
-/// ```
-/// extern crate zipkin_reporter_http;
-/// extern crate http;
-/// use std::str::FromStr;
-/// use zipkin_reporter_http::Builder;
-///
-/// // Create a repoter with a processing thread.
-/// let (_join, _reporter) = Builder::new( http::Uri::from_str( "http://zipkin:9411" ).unwrap() )
-///     .with_error_handler( |e| eprint!["error reporting spans: {}", e] )
-///     .start_thread();
-/// ```
 pub struct Reporter {
-    sender: Mutex<mpsc::Sender<Vec<u8>>>
+    sender: Mutex<mpsc::Sender<zipkin::Span>>
 }
 
 /// Allows building a Reporter.
 #[derive(Debug)]
 pub struct Builder<C: hyper::client::connect::Connect> {
     uri: http::Uri,
-    client: hyper::client::Client<C,span_body::SpanBody>,
+    client: hyper::client::Client<C,hyper::Body>,
     queue_size: usize,
     chunk_size: usize,
-    concurrency: usize
+    concurrency: usize,
 }
 
+pub(crate) fn resolve_spans_path( uri: http::Uri ) -> http::Uri {
+    let mut parts = http::uri::Parts::from( uri );
+    parts.path_and_query = match parts.path_and_query {
+        Some( ref path_and_query ) => {
+            let mut path = path_and_query.path().to_string();
+            if !path.ends_with('/') {
+                path.push_str("/")
+            }
+            path.push_str("api/v2/spans");
+            if let Some(query) = path_and_query.query().as_ref() {
+                path.push_str("?");
+                path.push_str(query);
+            };
+            Some( http::uri::PathAndQuery::from_str(&path).unwrap() )
+        },
+        None => {
+            Some( http::uri::PathAndQuery::from_static("/api/v2/spans") )
+        }
+    };
+    http::Uri::from_parts( parts ).expect("Invalid Uri supplied to zipkin_reporter_http::Builder::new")
+}
 
 impl Builder<hyper::client::HttpConnector> {
 
     /// Starts building a new client using the supplied Uri.
     pub fn new( uri : http::Uri ) -> Self {
-        let mut parts = uri.into_parts();
-        parts.path_and_query = Some( http::uri::PathAndQuery::from_static("/api/v2/spans") );
         Builder{
-            uri: http::Uri::from_parts( parts ).expect("Invalid Uri supplied to zipkin_reporter_http::Builder::new"),
+            uri: resolve_spans_path( uri ),
             queue_size: 100,
             chunk_size:  20,
             concurrency: 5,
@@ -118,10 +146,36 @@ impl<C: hyper::client::connect::Connect> Builder<C> {
     /// Changes the http client used to send the spans.
     ///
     /// This mainly allows changing the connector.
-    pub fn client<D: hyper::client::connect::Connect> ( self, client: hyper::Client<D, span_body::SpanBody> ) -> Builder<D> {
+    pub fn client<D: hyper::client::connect::Connect> ( self, client: hyper::Client<D, hyper::Body> ) -> Builder<D> {
         Builder{ client, uri: self.uri, concurrency: self.concurrency, chunk_size: self.chunk_size, queue_size: self.queue_size }
     }
 
+}
+
+/// Worker implements the logic for sending spans in the background.
+///
+/// A worker is always created together with a reporter and dispatches 
+/// spans from the internal queue to the actual zipkin instance. In order 
+/// to actually do something it has to be spawned on a future executor.
+#[must_use = "Worker must be polled in order to actually send spans."]
+pub struct Worker {
+    inner: Box<Stream<Item=(),Error=Error> + Send>
+}
+
+impl std::fmt::Debug for Worker {
+    
+    fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
+        fmt.debug_struct("Worker").finish()
+    }
+}
+
+impl Stream for Worker {
+    type Item = ();
+    type Error = Error;
+
+    fn poll(&mut self) -> Result<Async<Option<Self::Item>>,Self::Error> {
+        self.inner.poll()
+    }
 }
 
 impl<C> Builder<C>
@@ -167,91 +221,70 @@ impl<C> Builder<C>
     ///     Ok(())
     /// }))
     /// ```
-    pub fn build(self) -> ( impl Stream<Item=(),Error=Error>, Reporter ) {
+    pub fn build(self) -> ( Worker, Reporter ) {
         let Builder{ uri, client, queue_size, chunk_size, concurrency } = self;
         let (sender, receiver) = mpsc::channel( queue_size );
-        let worker = receiver.chunks( chunk_size )
+        let worker_inner = receiver.chunks( chunk_size )
             .map_err(|_| unreachable!() )
-            .map(move |spans|{
-            let request = hyper::Request::builder()
-                .method( http::method::Method::POST )
-                .header( http::header::CONTENT_TYPE, http::header::HeaderValue::from_static( "application/json" ) )
-                .uri( uri.clone() )
-                .body( span_body::SpanBody::new(spans) ).expect("http request");
-            client.request( request ).then( |response|{
-                match response {
-                    Ok( r ) => {
-                        if r.status().is_success() {
-                            Ok( () )
-                        } else {
-                            Err( Error{ inner: ErrorInner::Http( r.status() ) } )
-                        }
-                    },
-                    Err( e ) => {
-                        Err( Error{ inner: ErrorInner::Hyper(e) } )
+            .filter_map(|spans|{
+                match serde_json::to_string( &spans ) {
+                    Ok(body) => Some(body),
+                    Err(err) => {
+                        eprint!["zipkin-reporter-http: failed to serialize span ( {} ).\n\tThis is probably a bug. Please file a bug report against https://github.com/palantir/rust-zipkin\n", err ];
+                        None
                     }
                 }
-            } )
-        } ).buffer_unordered( concurrency );
-        ( worker, Reporter{ sender: Mutex::new( sender ) } )
+            })
+            .map(move |body|{
+                let request = hyper::Request::builder()
+                    .method( http::method::Method::POST )
+                    .header( http::header::CONTENT_TYPE, http::header::HeaderValue::from_static( "application/json" ) )
+                    .uri( uri.clone() )
+                    .body( hyper::Body::from( body ) ).expect( "http request" );
+                client.request( request ).then( |response|{
+                    match response {
+                        Ok( r ) => {
+                            if r.status().is_success() {
+                                Ok( () )
+                            } else {
+                                Err( Error{ inner: ErrorInner::Http( r.status() ) } )
+                            }
+                        },
+                        Err( e ) => {
+                            Err( Error{ inner: ErrorInner::Hyper(e) } )
+                        }
+                    }
+                } )
+            } ).buffer_unordered( concurrency );
+        ( Worker{ inner: Box::new(worker_inner) }, Reporter{ sender: Mutex::new( sender ) } )
     }
 
-    /// Attaches an error handling method to this builder.
-    pub fn with_error_handler<F>( self, error_handler: F ) -> BuilderWithErrorHandler<C,F> {
-        BuilderWithErrorHandler{
-            inner: self,
-            error_handler
-        }
-    }
-
-}
-
-pub struct BuilderWithErrorHandler<C: hyper::client::connect::Connect, F> {
-    inner: Builder<C>,
-    error_handler: F
-}
-
-impl<C,F> BuilderWithErrorHandler<C, F> 
-    where
-        C: hyper::client::connect::Connect + 'static,
-        C::Future: 'static,
-        F: Send + Fn(Error) + 'static
-{
     /// Builds the reporter and creates a background thread.
     ///
     /// # Panics
     /// When the OS fails to create the backing thread this method panics.
-    pub fn start_thread( self ) -> (thread::JoinHandle<()>, Reporter) {
-        let BuilderWithErrorHandler{ inner, error_handler } = self;
-        let (worker, reporter) = inner.build();
+    pub fn start_thread<F>( self, error_handler: F ) -> (thread::JoinHandle<()>, Reporter)
+        where F: Send + Fn(Error) + 'static {
+        let (worker, reporter) = self.build();
         let handle = thread::Builder::new()
             .name("zipkin-reporter-http".to_string())
             .spawn(move ||{
-                hyper::rt::run(worker.then(move |r|{
-                    if let Err(e) = r {
-                        error_handler(e);
-                    }
-                    Ok(())
-                }).for_each(|_|{ Ok(()) }) );
+                hyper::rt::run(
+                    worker
+                        .map_err(error_handler)
+                        .for_each(|_|{ Ok(()) })
+                );
             }).unwrap();
         (handle, reporter)
    }
 
 }
 
-
 impl zipkin::Report for Reporter {
 
-    fn report(&self, span: &zipkin::Span) {
-        match serde_json::to_vec(span) {
-            Ok( msg ) => {
-                if self.sender.lock().unwrap().try_send( msg ).is_err() {
-                    eprint!["zipkin-reporter-http: failed to queue span\n"]
-                }
-            }
-            Err( err ) => {
-                eprint!["zipkin-reporter-http: failed to serialize span ( {} ).\n\tThis is probably a bug. Please file a bug report against https://github.com/palantir/rust-zipkin\n", err ];
-            }
+    fn report2(&self, span: zipkin::Span) {
+        if self.sender.lock().unwrap().try_send( span ).is_err() {
+            eprint!["zipkin-reporter-http: failed to queue span\n"]
         }
     }
 
@@ -294,9 +327,9 @@ mod test {
         return rx;
     }
 
-    fn test_error_handler() -> ( mpsc::Receiver<Error>, impl Fn(Error) + Send + 'static ) {
+    fn test_error_handler() -> ( mpsc::Receiver<Error>, Box<Fn(Error) + Send + 'static> ) {
         let (tx, rx) = mpsc::sync_channel(10);
-        return (rx, move |err: Error|{ tx.send(err).unwrap() } )
+        return (rx, Box::new( move |err: Error|{ tx.send(err).unwrap() } ) )
     }
 
     #[test]
@@ -307,8 +340,7 @@ mod test {
         let (erx, eh) = test_error_handler();
         let (_, reporter) = Builder::new( http::Uri::from_str( "http://localhost:19411" ).unwrap() )
             .chunk_size( 1 )
-            .with_error_handler( eh )
-            .start_thread();
+            .start_thread( move |e| (*eh)(e) );
 
         // WHEN
         let span = zipkin::Span::builder()
@@ -318,7 +350,7 @@ mod test {
             .kind( zipkin::Kind::Client )
             .duration( Duration::from_secs( 1 ) )
             .build();
-        reporter.report( &span );
+        reporter.report2( span.clone() );
         // THEN
         let req : hyper::Request<Vec<u8>> = rx.recv().unwrap();
         assert_eq![ req.uri().path() , "/api/v2/spans" ];
@@ -344,8 +376,7 @@ mod test {
         let (erx, eh) = test_error_handler();
         let (_, reporter) = Builder::new( http::Uri::from_str( "http://localhost:19412/" ).unwrap() )
             .chunk_size( 1 )
-            .with_error_handler( eh )
-            .start_thread();
+            .start_thread( move |e| (*eh)(e) );
 
         // WHEN
         let span = zipkin::Span::builder()
@@ -355,13 +386,37 @@ mod test {
             .kind( zipkin::Kind::Client )
             .duration( Duration::from_secs( 1 ) )
             .build();
-        reporter.report( &span );
+        reporter.report2( span.clone() );
         // THEN
         let err = erx.recv().unwrap();
         assert_eq![ err.status_code(), Some(http::StatusCode::FORBIDDEN) ];
 
         // CLEANUP
         drop( reporter );
+    }
+
+    #[test]
+    fn it_resolves_the_spans_path() {
+        assert_eq![
+            resolve_spans_path( http::Uri::from_str("http://localhost").unwrap() ),
+            http::Uri::from_str("http://localhost/api/v2/spans").unwrap()
+        ];
+        assert_eq![
+            resolve_spans_path( http::Uri::from_str("http://localhost/").unwrap() ),
+            http::Uri::from_str("http://localhost/api/v2/spans").unwrap()
+        ];
+        assert_eq![
+            resolve_spans_path( http::Uri::from_str("http://localhost/sub").unwrap() ),
+            http::Uri::from_str("http://localhost/sub/api/v2/spans").unwrap()
+        ];
+        assert_eq![
+            resolve_spans_path( http::Uri::from_str("http://localhost/sub/").unwrap() ),
+            http::Uri::from_str("http://localhost/sub/api/v2/spans").unwrap()
+        ];
+        assert_eq![
+            resolve_spans_path( http::Uri::from_str("http://localhost/?query=param").unwrap() ),
+            http::Uri::from_str("http://localhost/api/v2/spans?query=param").unwrap()
+        ];
     }
 
 }

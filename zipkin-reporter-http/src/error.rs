@@ -69,6 +69,17 @@ impl error::Error for Error {
         }
     }
 
+    fn description(&self) -> &str {
+        match self.inner {
+            ErrorInner::Hyper( ref e ) => {
+                error::Error::description( e )
+            },
+            ErrorInner::Http( _ ) => {
+                "zipkin server replied with bad status code"
+            }
+        }
+    }
+
 }
 
 #[cfg(test)]
