@@ -135,7 +135,7 @@ where
         } = mem::replace(&mut self.state, SpanState::Nop)
         {
             let span = span.duration(start_instant.elapsed()).build();
-            self.attachment.tracer().0.reporter.report(&span);
+            self.attachment.tracer().0.reporter.report2(span);
         }
     }
 }
