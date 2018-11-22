@@ -1,0 +1,20 @@
+[package]
+name = "zipkin-reporter-http"
+version = "0.1.0"
+authors = ["Hannes Voigt-Georg <hannes.georg@gmail.com>"]
+license = "Apache-2.0"
+description = "HTTP Reporter for Zipkin"
+repository = "https://github.com/palantir/rust-zipkin"
+readme = "../README.md"
+categories = ["web-programming"]
+keywords = ["zipkin", "tracing"]
+
+[dependencies]
+bytes = "0.4"
+http = "0.1"
+hyper = "0.12"
+tokio = "0.1"
+zipkin = { version = "0.3", path = "../zipkin", features = [ "serde" ] }
+futures = "0.1"
+serde_json = "1"
+iovec = "*"
