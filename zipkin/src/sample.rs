@@ -14,6 +14,7 @@
 
 //! Span samplers.
 use rand;
+use std::sync::Arc;
 
 use TraceId;
 
@@ -27,6 +28,24 @@ pub trait Sample {
     /// Returns `true` if the span associated with the trace ID should be
     /// recorded.
     fn sample(&self, trace_id: TraceId) -> bool;
+}
+
+impl<T> Sample for Arc<T>
+where
+    T: ?Sized + Sample,
+{
+    fn sample(&self, trace_id: TraceId) -> bool {
+        (**self).sample(trace_id)
+    }
+}
+
+impl<T> Sample for Box<T>
+where
+    T: ?Sized + Sample,
+{
+    fn sample(&self, trace_id: TraceId) -> bool {
+        (**self).sample(trace_id)
+    }
 }
 
 /// A `Sample`r which always returns `true`.
