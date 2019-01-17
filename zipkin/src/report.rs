@@ -13,6 +13,8 @@
 //  limitations under the License.
 
 //! Span reporters.
+use std::sync::Arc;
+
 use Span;
 
 /// A reporter consumes Zipkin spans and reports them.
@@ -34,6 +36,24 @@ pub trait Report {
     #[deprecated(since = "0.3.2", note = "use `report2` instead")]
     fn report(&self, _: &Span) {
         unimplemented!()
+    }
+}
+
+impl<T> Report for Arc<T>
+where
+    T: ?Sized + Report,
+{
+    fn report2(&self, span: Span) {
+        (**self).report2(span)
+    }
+}
+
+impl<T> Report for Box<T>
+where
+    T: ?Sized + Report,
+{
+    fn report2(&self, span: Span) {
+        (**self).report2(span)
     }
 }
 

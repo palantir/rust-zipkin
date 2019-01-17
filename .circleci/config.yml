@@ -30,6 +30,7 @@ jobs:
       - checkout
       - *RESTORE_REGISTRY
       - run: cargo generate-lockfile
+      - run: cargo update -p data-encoding --precise 2.1.1
       - *SAVE_REGISTRY
       - run: rustc --version > ~/rust-version
       - *RESTORE_DEPS
