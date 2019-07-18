@@ -21,16 +21,14 @@ save_deps: &SAVE_DEPS
 version: 2
 jobs:
   build:
-    working_directory: ~/build
     docker:
-      - image: rust:1.25.0-slim
+      - image: rust:1.32.0
         environment:
           RUSTFLAGS: -D warnings
     steps:
       - checkout
       - *RESTORE_REGISTRY
       - run: cargo generate-lockfile
-      - run: cargo update -p data-encoding --precise 2.1.1
       - *SAVE_REGISTRY
       - run: rustc --version > ~/rust-version
       - *RESTORE_DEPS
