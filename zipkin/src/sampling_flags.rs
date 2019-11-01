@@ -96,11 +96,7 @@ impl Builder {
     #[inline]
     pub fn build(&self) -> SamplingFlags {
         SamplingFlags {
-            sampled: if self.debug {
-                Some(true)
-            } else {
-                self.sampled
-            },
+            sampled: if self.debug { Some(true) } else { self.sampled },
             debug: self.debug,
         }
     }

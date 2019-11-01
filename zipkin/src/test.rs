@@ -1,6 +1,5 @@
+use crate::{Endpoint, Report, Span, Tracer};
 use std::sync::{Arc, Mutex};
-
-use {Endpoint, Report, Span, Tracer};
 
 struct TestReporter(Arc<Mutex<Vec<Span>>>);
 

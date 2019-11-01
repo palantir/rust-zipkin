@@ -16,9 +16,6 @@
 #![doc(html_root_url = "https://docs.rs/http-zipkin/0.1")]
 #![warn(missing_docs)]
 
-extern crate http;
-extern crate zipkin;
-
 use http::header::{HeaderMap, HeaderValue};
 use std::fmt::Write;
 use std::str::FromStr;

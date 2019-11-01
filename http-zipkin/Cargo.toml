@@ -2,6 +2,7 @@
 name = "http-zipkin"
 version = "0.1.1"
 authors = ["Steven Fackler <sfackler@palantir.com>"]
+edition = "2018"
 license = "Apache-2.0"
 description = "HTTP header propagation for Zipkin trace information."
 repository = "https://github.com/palantir/rust-zipkin"

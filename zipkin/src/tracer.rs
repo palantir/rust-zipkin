@@ -13,21 +13,20 @@
 //  limitations under the License.
 
 //! Tracers.
-use rand::{self, Rng};
+use crate::report::LoggingReporter;
+use crate::sample::AlwaysSampler;
+use crate::span;
+use crate::trace_context;
+use crate::tracer::private::Sealed;
+use crate::{
+    Annotation, Endpoint, Kind, Report, Sample, SamplingFlags, Span, SpanId, TraceContext, TraceId,
+};
+use rand::Rng;
 use std::marker::PhantomData;
 use std::mem;
 use std::sync::Arc;
 use std::time::{Instant, SystemTime};
 use thread_local_object::ThreadLocal;
-
-use report::LoggingReporter;
-use sample::AlwaysSampler;
-use span;
-use trace_context;
-use tracer::private::Sealed;
-use {
-    Annotation, Endpoint, Kind, Report, Sample, SamplingFlags, Span, SpanId, TraceContext, TraceId,
-};
 
 /// A guard object for the thread-local current trace context.
 ///
@@ -55,7 +54,7 @@ impl Drop for CurrentGuard {
 }
 
 mod private {
-    use Tracer;
+    use crate::Tracer;
 
     pub trait Sealed {
         fn tracer(&self) -> &Tracer;
@@ -256,8 +255,8 @@ impl OpenSpan<Detached> {
 struct Inner {
     current: ThreadLocal<TraceContext>,
     local_endpoint: Endpoint,
-    reporter: Box<Report + Sync + Send>,
-    sampler: Box<Sample + Sync + Send>,
+    reporter: Box<dyn Report + Sync + Send>,
+    sampler: Box<dyn Sample + Sync + Send>,
 }
 
 /// The root tracing object.
@@ -392,15 +391,15 @@ impl Tracer {
 
 /// A builder type for `Tracer`s.
 pub struct Builder {
-    reporter: Option<Box<Report + Sync + Send>>,
-    sampler: Option<Box<Sample + Sync + Send>>,
+    reporter: Option<Box<dyn Report + Sync + Send>>,
+    sampler: Option<Box<dyn Sample + Sync + Send>>,
 }
 
 impl Builder {
     /// Sets the reporter which consumes completed spans.
     ///
     /// Defaults to the `LoggingReporter`.
-    pub fn reporter(&mut self, reporter: Box<Report + Sync + Send>) -> &mut Builder {
+    pub fn reporter(&mut self, reporter: Box<dyn Report + Sync + Send>) -> &mut Builder {
         self.reporter = Some(reporter);
         self
     }
@@ -408,7 +407,7 @@ impl Builder {
     /// Sets the sampler which determines if a trace should be tracked and reported.
     ///
     /// Defaults to the `AlwaysSampler`.
-    pub fn sampler(&mut self, sampler: Box<Sample + Sync + Send>) -> &mut Builder {
+    pub fn sampler(&mut self, sampler: Box<dyn Sample + Sync + Send>) -> &mut Builder {
         self.sampler = Some(sampler);
         self
     }

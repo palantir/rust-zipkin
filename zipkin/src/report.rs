@@ -13,9 +13,9 @@
 //  limitations under the License.
 
 //! Span reporters.
+use crate::Span;
+use log::info;
 use std::sync::Arc;
-
-use Span;
 
 /// A reporter consumes Zipkin spans and reports them.
 ///

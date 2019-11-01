@@ -32,7 +32,7 @@ enum Inner {
 pub struct TraceId(Inner);
 
 impl fmt::Display for TraceId {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         for b in self.bytes() {
             write!(fmt, "{:02x}", b)?;
         }
@@ -68,11 +68,10 @@ impl FromStr for TraceId {
 
 #[cfg(feature = "serde")]
 mod serde {
+    use crate::trace_id::TraceId;
     use serde::de::{Error, Unexpected, Visitor};
     use serde::{Deserialize, Deserializer, Serialize, Serializer};
     use std::fmt;
-
-    use trace_id::TraceId;
 
     impl Serialize for TraceId {
         fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
@@ -141,7 +140,7 @@ impl From<[u8; 16]> for TraceId {
 pub struct TraceIdParseError(Option<DecodeError>);
 
 impl fmt::Display for TraceIdParseError {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(fmt, "{}: ", self.description())?;
         match self.0 {
             Some(ref err) => write!(fmt, "{}", err),
@@ -155,7 +154,7 @@ impl Error for TraceIdParseError {
         "error parsing trace ID"
     }
 
-    fn cause(&self) -> Option<&Error> {
+    fn cause(&self) -> Option<&dyn Error> {
         match self.0 {
             Some(ref e) => Some(e),
             None => None,

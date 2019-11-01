@@ -13,8 +13,8 @@
 //  limitations under the License.
 
 //! Trace contexts.
-use sampling_flags;
-use {SamplingFlags, SpanId, TraceId};
+use crate::sampling_flags;
+use crate::{SamplingFlags, SpanId, TraceId};
 
 /// A `TraceContext` represents a distributed trace request.
 ///

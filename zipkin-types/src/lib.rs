@@ -24,22 +24,17 @@
 //! [specification]: https://github.com/openzipkin/zipkin-api/blob/master/zipkin2-api.yaml
 #![doc(html_root_url = "https://docs.rs/zipkin-types/0.1")]
 #![warn(missing_docs)]
-extern crate data_encoding;
-
-#[cfg(feature = "serde")]
-#[macro_use]
-extern crate serde;
 
 #[doc(inline)]
-pub use annotation::Annotation;
+pub use crate::annotation::Annotation;
 #[doc(inline)]
-pub use endpoint::Endpoint;
+pub use crate::endpoint::Endpoint;
 #[doc(inline)]
-pub use span::{Kind, Span};
+pub use crate::span::{Kind, Span};
 #[doc(inline)]
-pub use span_id::SpanId;
+pub use crate::span_id::SpanId;
 #[doc(inline)]
-pub use trace_id::TraceId;
+pub use crate::trace_id::TraceId;
 
 pub mod annotation;
 pub mod endpoint;
@@ -53,8 +48,11 @@ mod time_micros {
     use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
     pub fn to_wire(time: &SystemTime) -> u64 {
-        super::duration_micros::to_wire(&time.duration_since(UNIX_EPOCH)
-            .unwrap_or(Duration::from_secs(0)))
+        super::duration_micros::to_wire(
+            &time
+                .duration_since(UNIX_EPOCH)
+                .unwrap_or(Duration::from_secs(0)),
+        )
     }
 
     pub fn from_wire(time: u64) -> SystemTime {

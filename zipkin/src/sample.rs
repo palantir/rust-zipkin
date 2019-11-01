@@ -13,10 +13,8 @@
 //  limitations under the License.
 
 //! Span samplers.
-use rand;
+use crate::TraceId;
 use std::sync::Arc;
-
-use TraceId;
 
 /// A sampler decides whether or not a span should be recorded based on its
 /// trace ID.
