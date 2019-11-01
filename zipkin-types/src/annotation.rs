@@ -25,7 +25,7 @@ use std::time::SystemTime;
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
 pub struct Annotation {
-    #[cfg_attr(feature = "serde", serde(with = "::time_micros"))]
+    #[cfg_attr(feature = "serde", serde(with = "crate::time_micros"))]
     timestamp: SystemTime,
     value: String,
 }
