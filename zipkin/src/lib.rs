@@ -34,6 +34,8 @@ pub use zipkin_types::{
 };
 
 #[doc(inline)]
+pub use crate::open_span::*;
+#[doc(inline)]
 pub use crate::report::Report;
 #[doc(inline)]
 pub use crate::sample::Sample;
@@ -42,13 +44,14 @@ pub use crate::sampling_flags::SamplingFlags;
 #[doc(inline)]
 pub use crate::trace_context::TraceContext;
 #[doc(inline)]
-pub use crate::tracer::{Attached, Attachment, Detached, OpenSpan, Tracer};
+pub use crate::tracer::*;
 
+mod open_span;
 pub mod report;
 pub mod sample;
 pub mod sampling_flags;
 pub mod trace_context;
-pub mod tracer;
+mod tracer;
 
 #[cfg(test)]
 mod test;
