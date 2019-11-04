@@ -20,53 +20,11 @@ use crate::{
 };
 use lazycell::AtomicLazyCell;
 use rand::Rng;
-use std::cell::Cell;
 use std::error::Error;
 use std::fmt;
-use std::marker::PhantomData;
 use std::time::{Instant, SystemTime};
 
-thread_local! {
-    static CURRENT: Cell<Option<TraceContext>> = Cell::new(None);
-}
-
 pub(crate) static TRACER: AtomicLazyCell<Tracer> = AtomicLazyCell::NONE;
-
-/// A guard object for the thread-local current trace context.
-///
-/// It will restore the previous trace context when it drops.
-pub struct CurrentGuard {
-    prev: Option<TraceContext>,
-    // make sure this type is !Send since it pokes at thread locals
-    _p: PhantomData<*const ()>,
-}
-
-unsafe impl Sync for CurrentGuard {}
-
-impl Drop for CurrentGuard {
-    fn drop(&mut self) {
-        CURRENT.with(|c| c.set(self.prev));
-    }
-}
-
-/// Sets this thread's current trace context.
-///
-/// This method does not start a span. It is designed to be used when
-/// propagating the trace of an existing span to a new thread.
-///
-/// A guard object is returned which will restore the previous trace context
-/// when it falls out of scope.
-pub fn set_current(context: TraceContext) -> CurrentGuard {
-    CurrentGuard {
-        prev: CURRENT.with(|c| c.replace(Some(context))),
-        _p: PhantomData,
-    }
-}
-
-/// Returns this thread's current trace context.
-pub fn current() -> Option<TraceContext> {
-    CURRENT.with(|c| c.get())
-}
 
 pub(crate) struct Tracer {
     pub sampler: Box<dyn Sample + Sync + Send>,
@@ -147,7 +105,7 @@ pub fn new_child(parent: TraceContext) -> OpenSpan<Attached> {
 
 /// Creates a new span parented to the current one if it exists, or starting a new trace otherwise.
 pub fn next_span() -> OpenSpan<Attached> {
-    match current() {
+    match crate::current() {
         Some(context) => new_child(context),
         None => new_trace(),
     }

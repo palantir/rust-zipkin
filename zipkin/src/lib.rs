@@ -34,6 +34,8 @@ pub use zipkin_types::{
 };
 
 #[doc(inline)]
+pub use crate::current::*;
+#[doc(inline)]
 pub use crate::open_span::*;
 #[doc(inline)]
 pub use crate::report::Report;
@@ -46,6 +48,7 @@ pub use crate::trace_context::TraceContext;
 #[doc(inline)]
 pub use crate::tracer::*;
 
+mod current;
 mod open_span;
 pub mod report;
 pub mod sample;
