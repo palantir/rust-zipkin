@@ -177,7 +177,7 @@ impl OpenSpan<Detached> {
     /// Binds this span to a future.
     ///
     /// Returns a new future which sets the span's context as the current when polled before
-    /// delegating to the inner /// future. The span will close when the future is dropped.
+    /// delegating to the inner future. The span will close when the future is dropped.
     #[inline]
     pub fn bind<F>(self, future: F) -> Bind<F>
     where
