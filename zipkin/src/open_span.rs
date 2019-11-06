@@ -1,5 +1,8 @@
 use crate::{span, tracer, Annotation, CurrentGuard, Endpoint, Kind, TraceContext};
+use std::future::Future;
 use std::mem;
+use std::pin::Pin;
+use std::task::{Context, Poll};
 use std::time::Instant;
 
 /// A type indicating that an `OpenSpan` is "attached" to the current thread.
@@ -21,17 +24,17 @@ pub(crate) enum SpanState {
 /// This is a guard object - the span will be finished and reported when it
 /// falls out of scope.
 ///
-/// Spans can either be "attached" to or "detached" from their tracer. An attached span manages its
-/// tracer's current span - it acts like a `CurrentGuard`. A detached span does not but is `Send`
+/// Spans can either be "attached" to or "detached" from their tracer. An attached span manages the
+/// thread's current span - it acts like a `CurrentGuard`. A detached span does not but is `Send`
 /// unlike an attached span. Spans are attached by default, but can be detached or reattached via
 /// the `detach` and `attach` methods.
 ///
 /// Detached spans are intended for use when you need to manually maintain the current trace
 /// context. For example, when working with nonblocking futures a single OS thread is managing many
-/// separate tasks. The `futures-zipkin` crate provides a wrapper type which ensures a context is
-/// registered as the current whenever a task is running. If some computation starts executing on
-/// one thread and finishes executing on another, you can detach the span, send it to the other
-/// thread, and then reattach it to properly model that behavior.
+/// separate tasks. The `bind` method binds a span to a future, setting the thread's current span
+/// each time the thread is polled. If some computation starts executing on one thread and finishes
+/// executing on another, you can detach the span, send it to the other thread, and then reattach
+/// it to properly model that behavior.
 pub struct OpenSpan<T> {
     _mode: T,
     context: TraceContext,
@@ -169,5 +172,40 @@ impl OpenSpan<Detached> {
             // since we've swapped in Nop here, self's Drop impl won't do anything
             state: mem::replace(&mut self.state, SpanState::Nop),
         }
+    }
+
+    /// Binds this span to a future.
+    ///
+    /// Returns a new future which sets the span's context as the current when polled before
+    /// delegating to the inner /// future. The span will close when the future is dropped.
+    #[inline]
+    pub fn bind<F>(self, future: F) -> Bind<F>
+    where
+        F: Future,
+    {
+        Bind { span: self, future }
+    }
+}
+
+/// A type which wraps a future, associating it with an `OpenSpan`.
+///
+/// The span's context will be set as the current whenever it's polled, and the span will close
+/// when the future is dropped.
+pub struct Bind<T> {
+    span: OpenSpan<Detached>,
+    future: T,
+}
+
+impl<T> Future for Bind<T>
+where
+    T: Future,
+{
+    type Output = T::Output;
+
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        let _guard = crate::set_current(self.span.context());
+        // The pin "projects" into the future field. We could avoid the unsafety by using the
+        // pin-project crate, but that seems like a waste for one type.
+        unsafe { self.map_unchecked_mut(|t| &mut t.future).poll(cx) }
     }
 }
