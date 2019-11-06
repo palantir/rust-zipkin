@@ -50,7 +50,7 @@ impl<T> Drop for OpenSpan<T> {
         {
             if let Some(tracer) = tracer::TRACER.borrow() {
                 let span = span.duration(start_instant.elapsed()).build();
-                tracer.reporter.report2(span);
+                tracer.reporter.report(span);
             }
         }
     }

@@ -9,7 +9,7 @@ thread_local! {
 struct TestReporter;
 
 impl Report for TestReporter {
-    fn report2(&self, span: Span) {
+    fn report(&self, span: Span) {
         SPANS.with(|s| s.borrow_mut().push(span));
     }
 }
