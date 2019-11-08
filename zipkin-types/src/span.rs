@@ -85,7 +85,10 @@ pub struct Span {
     kind: Option<Kind>,
     #[cfg_attr(
         feature = "serde",
-        serde(skip_serializing_if = "Option::is_none", with = "crate::opt_time_micros")
+        serde(
+            skip_serializing_if = "Option::is_none",
+            with = "crate::opt_time_micros"
+        )
     )]
     timestamp: Option<SystemTime>,
     #[cfg_attr(

@@ -1,7 +1,7 @@
 use crate::sample::AlwaysSampler;
 use crate::{Endpoint, Report, Span};
-use std::cell::RefCell;
 use futures::executor;
+use std::cell::RefCell;
 
 thread_local! {
     static SPANS: RefCell<Vec<Span>> = RefCell::new(vec![]);
