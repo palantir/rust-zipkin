@@ -20,3 +20,6 @@ pin-project-lite = "0.1"
 rand = "0.7"
 
 zipkin-types = { version = "0.1.0", path = "../zipkin-types" }
+
+[dev-dependencies]
+futures = "0.3"
