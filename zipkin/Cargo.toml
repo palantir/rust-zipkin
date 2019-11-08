@@ -1,7 +1,8 @@
 [package]
 name = "zipkin"
-version = "0.3.5"
+version = "0.4.0"
 authors = ["Steven Fackler <sfackler@palantir.com>"]
+edition = "2018"
 license = "Apache-2.0"
 description = "A library for collecting timing information about distributed computations"
 repository = "https://github.com/palantir/rust-zipkin"
@@ -14,7 +15,11 @@ serde = ["zipkin-types/serde"]
 
 [dependencies]
 log = "0.4"
+lazycell = "1.0"
+pin-project-lite = "0.1"
 rand = "0.7"
-thread-local-object = "0.1"
 
 zipkin-types = { version = "0.1.0", path = "../zipkin-types" }
+
+[dev-dependencies]
+futures = "0.3"

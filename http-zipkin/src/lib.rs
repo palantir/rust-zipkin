@@ -13,23 +13,20 @@
 //  limitations under the License.
 
 //! HTTP header propagation for Zipkin trace information.
-#![doc(html_root_url = "https://docs.rs/http-zipkin/0.1")]
+#![doc(html_root_url = "https://docs.rs/http-zipkin/0.2")]
 #![warn(missing_docs)]
-
-extern crate http;
-extern crate zipkin;
 
 use http::header::{HeaderMap, HeaderValue};
 use std::fmt::Write;
 use std::str::FromStr;
 use zipkin::{SamplingFlags, TraceContext};
 
-const X_B3_SAMPLED: &'static str = "X-B3-Sampled";
-const X_B3_FLAGS: &'static str = "X-B3-Flags";
-const X_B3_TRACEID: &'static str = "X-B3-TraceId";
-const X_B3_PARENTSPANID: &'static str = "X-B3-ParentSpanId";
-const X_B3_SPANID: &'static str = "X-B3-SpanId";
-const B3: &'static str = "b3";
+const X_B3_SAMPLED: &str = "X-B3-Sampled";
+const X_B3_FLAGS: &str = "X-B3-Flags";
+const X_B3_TRACEID: &str = "X-B3-TraceId";
+const X_B3_PARENTSPANID: &str = "X-B3-ParentSpanId";
+const X_B3_SPANID: &str = "X-B3-SpanId";
+const B3: &str = "b3";
 
 /// Serializes sampling flags into the `b3` HTTP header.
 ///

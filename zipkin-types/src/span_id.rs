@@ -45,7 +45,7 @@ impl FromStr for SpanId {
 }
 
 impl fmt::Display for SpanId {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         for b in self.bytes() {
             write!(fmt, "{:02x}", b)?;
         }
@@ -55,11 +55,10 @@ impl fmt::Display for SpanId {
 
 #[cfg(feature = "serde")]
 mod serde {
+    use crate::span_id::SpanId;
     use serde::de::{Error, Unexpected, Visitor};
     use serde::{Deserialize, Deserializer, Serialize, Serializer};
     use std::fmt;
-
-    use span_id::SpanId;
 
     impl Serialize for SpanId {
         fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
@@ -118,7 +117,7 @@ impl From<[u8; 8]> for SpanId {
 pub struct SpanIdParseError(Option<DecodeError>);
 
 impl fmt::Display for SpanIdParseError {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(fmt, "{}: ", self.description())?;
         match self.0 {
             Some(ref err) => write!(fmt, "{}", err),
@@ -128,14 +127,7 @@ impl fmt::Display for SpanIdParseError {
 }
 
 impl Error for SpanIdParseError {
-    fn description(&self) -> &str {
-        "error parsing span ID"
-    }
-
-    fn cause(&self) -> Option<&Error> {
-        match self.0 {
-            Some(ref e) => Some(e),
-            None => None,
-        }
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        self.0.as_ref().map(|e| e as _)
     }
 }

@@ -24,36 +24,37 @@
 //!
 //! [Zipkin]: http://zipkin.io/
 //! [specification]: https://github.com/openzipkin/zipkin-api/blob/master/zipkin2-api.yaml
-#![doc(html_root_url = "https://docs.rs/zipkin/0.3")]
+#![doc(html_root_url = "https://docs.rs/zipkin/0.4")]
 #![warn(missing_docs)]
 
-extern crate rand;
-extern crate thread_local_object;
-extern crate zipkin_types;
-
-#[macro_use]
-extern crate log;
-
 #[doc(inline)]
-pub use zipkin_types::{annotation, endpoint, span, span_id, trace_id, Annotation, Endpoint, Kind,
-                       Span, SpanId, TraceId};
+pub use zipkin_types::{
+    annotation, endpoint, span, span_id, trace_id, Annotation, Endpoint, Kind, Span, SpanId,
+    TraceId,
+};
 
 #[doc(inline)]
-pub use report::Report;
+pub use crate::current::*;
 #[doc(inline)]
-pub use sample::Sample;
+pub use crate::open_span::*;
 #[doc(inline)]
-pub use sampling_flags::SamplingFlags;
+pub use crate::report::Report;
 #[doc(inline)]
-pub use trace_context::TraceContext;
+pub use crate::sample::Sample;
 #[doc(inline)]
-pub use tracer::{Attached, Attachment, Detached, OpenSpan, Tracer};
+pub use crate::sampling_flags::SamplingFlags;
+#[doc(inline)]
+pub use crate::trace_context::TraceContext;
+#[doc(inline)]
+pub use crate::tracer::*;
 
+mod current;
+mod open_span;
 pub mod report;
 pub mod sample;
 pub mod sampling_flags;
 pub mod trace_context;
-pub mod tracer;
+mod tracer;
 
 #[cfg(test)]
 mod test;

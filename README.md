@@ -18,14 +18,6 @@ schema.
 The zipkin crate defines a `Tracer` object which handles the heavy lifting of
 creating and recording Zipkin spans.
 
-## futures-zipkin
-
-[Documentation](https://docs.rs/futures-zipkin)
-
-The futures-zipkin crate provides an adaptor type which bridges the thread-based
-`Tracer` and the nonblocking `futures` world. It ensures that a `TraceContext`
-is registered while the inner `Future`, `Stream`, or `Sink` is running.
-
 ## http-zipkin
 
 [Documentation](https://docs.rs/http-zipkin)
