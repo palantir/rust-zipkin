@@ -24,7 +24,7 @@
 //!
 //! [Zipkin]: http://zipkin.io/
 //! [specification]: https://github.com/openzipkin/zipkin-api/blob/master/zipkin2-api.yaml
-#![doc(html_root_url = "https://docs.rs/zipkin/0.3")]
+#![doc(html_root_url = "https://docs.rs/zipkin/0.4")]
 #![warn(missing_docs)]
 
 #[doc(inline)]

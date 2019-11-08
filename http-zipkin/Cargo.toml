@@ -1,6 +1,6 @@
 [package]
 name = "http-zipkin"
-version = "0.1.1"
+version = "0.2.0"
 authors = ["Steven Fackler <sfackler@palantir.com>"]
 edition = "2018"
 license = "Apache-2.0"
@@ -12,4 +12,4 @@ keywords = ["zipkin", "tracing"]
 
 [dependencies]
 http = "0.1"
-zipkin = "0.3"
+zipkin = { version = "0.4", path = "../zipkin" }
