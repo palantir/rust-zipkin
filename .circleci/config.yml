@@ -27,7 +27,7 @@ jobs:
           RUSTFLAGS: -D warnings
     steps:
       - checkout
-      - rustup component add rustfmt clippy
+      - run: rustup component add rustfmt clippy
       - *RESTORE_REGISTRY
       - run: cargo generate-lockfile
       - *SAVE_REGISTRY
