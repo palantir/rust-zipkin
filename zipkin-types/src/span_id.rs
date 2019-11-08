@@ -127,14 +127,7 @@ impl fmt::Display for SpanIdParseError {
 }
 
 impl Error for SpanIdParseError {
-    fn description(&self) -> &str {
-        "error parsing span ID"
-    }
-
-    fn cause(&self) -> Option<&dyn Error> {
-        match self.0 {
-            Some(ref e) => Some(e),
-            None => None,
-        }
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        self.0.as_ref().map(|e| e as _)
     }
 }

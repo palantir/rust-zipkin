@@ -12,6 +12,7 @@ pub struct Attached(CurrentGuard);
 /// A type indicating that an `OpenSpan` is "detached" from the current thread.
 pub struct Detached(());
 
+#[allow(clippy::large_enum_variant)]
 pub(crate) enum SpanState {
     Real {
         span: span::Builder,

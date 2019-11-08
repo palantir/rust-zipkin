@@ -43,7 +43,7 @@ impl SamplingFlags {
     /// A value of `None` indicates that the service working in the context is
     /// responsible for determining if it should be sampled.
     #[inline]
-    pub fn sampled(&self) -> Option<bool> {
+    pub fn sampled(self) -> Option<bool> {
         self.sampled
     }
 
@@ -52,7 +52,7 @@ impl SamplingFlags {
     /// Debug contexts should always be sampled, regardless of the value of
     /// `sampled()`.
     #[inline]
-    pub fn debug(&self) -> bool {
+    pub fn debug(self) -> bool {
         self.debug
     }
 }

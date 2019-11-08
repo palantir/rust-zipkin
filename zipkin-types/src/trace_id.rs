@@ -150,14 +150,7 @@ impl fmt::Display for TraceIdParseError {
 }
 
 impl Error for TraceIdParseError {
-    fn description(&self) -> &str {
-        "error parsing trace ID"
-    }
-
-    fn cause(&self) -> Option<&dyn Error> {
-        match self.0 {
-            Some(ref e) => Some(e),
-            None => None,
-        }
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        self.0.as_ref().map(|e| e as _)
     }
 }

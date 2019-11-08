@@ -21,12 +21,12 @@ use std::fmt::Write;
 use std::str::FromStr;
 use zipkin::{SamplingFlags, TraceContext};
 
-const X_B3_SAMPLED: &'static str = "X-B3-Sampled";
-const X_B3_FLAGS: &'static str = "X-B3-Flags";
-const X_B3_TRACEID: &'static str = "X-B3-TraceId";
-const X_B3_PARENTSPANID: &'static str = "X-B3-ParentSpanId";
-const X_B3_SPANID: &'static str = "X-B3-SpanId";
-const B3: &'static str = "b3";
+const X_B3_SAMPLED: &str = "X-B3-Sampled";
+const X_B3_FLAGS: &str = "X-B3-Flags";
+const X_B3_TRACEID: &str = "X-B3-TraceId";
+const X_B3_PARENTSPANID: &str = "X-B3-ParentSpanId";
+const X_B3_SPANID: &str = "X-B3-SpanId";
+const B3: &str = "b3";
 
 /// Serializes sampling flags into the `b3` HTTP header.
 ///
