@@ -1,4 +1,5 @@
 use crate::{span, tracer, Annotation, CurrentGuard, Endpoint, Kind, TraceContext};
+use pin_project_lite::pin_project;
 use std::future::Future;
 use std::mem;
 use std::pin::Pin;
@@ -187,13 +188,16 @@ impl OpenSpan<Detached> {
     }
 }
 
-/// A type which wraps a future, associating it with an `OpenSpan`.
-///
-/// The span's context will be set as the current whenever it's polled, and the span will close
-/// when the future is dropped.
-pub struct Bind<T> {
-    span: OpenSpan<Detached>,
-    future: T,
+pin_project! {
+    /// A type which wraps a future, associating it with an `OpenSpan`.
+    ///
+    /// The span's context will be set as the current whenever it's polled, and the span will close
+    /// when the future is dropped.
+    pub struct Bind<T> {
+        span: OpenSpan<Detached>,
+        #[pin]
+        future: T,
+    }
 }
 
 impl<T> Future for Bind<T>
@@ -203,9 +207,8 @@ where
     type Output = T::Output;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        let _guard = crate::set_current(self.span.context());
-        // The pin "projects" into the future field. We could avoid the unsafety by using the
-        // pin-project crate, but that seems like a waste for one type.
-        unsafe { self.map_unchecked_mut(|t| &mut t.future).poll(cx) }
+        let this = self.project();
+        let _guard = crate::set_current(this.span.context());
+        this.future.poll(cx)
     }
 }

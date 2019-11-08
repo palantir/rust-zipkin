@@ -16,6 +16,7 @@ serde = ["zipkin-types/serde"]
 [dependencies]
 log = "0.4"
 lazycell = "1.0"
+pin-project-lite = "0.1"
 rand = "0.7"
 
 zipkin-types = { version = "0.1.0", path = "../zipkin-types" }
