@@ -13,7 +13,7 @@
 //  limitations under the License.
 
 //! HTTP header propagation for Zipkin trace information.
-#![doc(html_root_url = "https://docs.rs/http-zipkin/0.2")]
+#![doc(html_root_url = "https://docs.rs/http-zipkin/0.3")]
 #![warn(missing_docs)]
 
 use http::header::{HeaderMap, HeaderValue};
