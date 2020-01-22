@@ -1,0 +1,17 @@
+[package]
+name = "zipkin-macros"
+version = "0.1.0"
+authors = ["Steven Fackler <sfackler@palantir.com>"]
+edition = "2018"
+license = "Apache-2.0"
+description = "Macros for use with `zipkin`"
+repository = "https://github.com/palantir/rust-zipkin"
+readme = "../README.md"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+quote = "1.0"
+proc-macro2 = "1.0"
+syn = { version = "1.0", features = ["full"] }

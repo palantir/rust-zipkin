@@ -27,6 +27,8 @@
 #![doc(html_root_url = "https://docs.rs/zipkin/0.4")]
 #![warn(missing_docs)]
 
+#[cfg(feature = "macros")]
+pub use zipkin_macros::*;
 #[doc(inline)]
 pub use zipkin_types::{
     annotation, endpoint, span, span_id, trace_id, Annotation, Endpoint, Kind, Span, SpanId,

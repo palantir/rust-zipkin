@@ -2,5 +2,6 @@
 members = [
     "http-zipkin",
     "zipkin",
+    "zipkin-macros",
     "zipkin-types",
 ]
