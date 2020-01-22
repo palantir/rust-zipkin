@@ -12,6 +12,7 @@ keywords = ["zipkin", "tracing"]
 
 [features]
 serde = ["zipkin-types/serde"]
+macros = ["zipkin-macros"]
 
 [dependencies]
 log = "0.4"
@@ -19,6 +20,7 @@ lazycell = "1.0"
 pin-project-lite = "0.1"
 rand = "0.7"
 
+zipkin-macros = { version = "0.1.0", optional = true, path = "../zipkin-macros" }
 zipkin-types = { version = "0.1.0", path = "../zipkin-types" }
 
 [dev-dependencies]

@@ -2,6 +2,10 @@ use crate::sample::AlwaysSampler;
 use crate::{Endpoint, Report, Span};
 use futures::executor;
 use std::cell::RefCell;
+use std::mem;
+
+#[cfg(feature = "macros")]
+mod macros;
 
 thread_local! {
     static SPANS: RefCell<Vec<Span>> = RefCell::new(vec![]);
@@ -18,6 +22,10 @@ impl Report for TestReporter {
 fn init() {
     let _ = crate::set_tracer(AlwaysSampler, TestReporter, Endpoint::builder().build());
     SPANS.with(|s| s.borrow_mut().clear());
+}
+
+fn take() -> Vec<Span> {
+    SPANS.with(|s| mem::replace(&mut *s.borrow_mut(), vec![]))
 }
 
 #[test]
@@ -44,7 +52,7 @@ fn detach_attach() {
     drop(child2);
     drop(parent);
 
-    let spans = SPANS.with(|s| s.borrow().clone());
+    let spans = take();
     assert_eq!(spans.len(), 4);
     assert_eq!(spans[0].id(), child3_id);
     assert_eq!(spans[0].parent_id(), Some(detached_id));
@@ -79,7 +87,7 @@ fn bind() {
 
     drop(other_root);
 
-    let spans = SPANS.with(|s| s.borrow().clone());
+    let spans = take();
     assert_eq!(spans.len(), 3);
     assert_eq!(spans[0].id(), future_context.span_id());
     assert_eq!(spans[0].parent_id(), Some(future_root_context.span_id()));
