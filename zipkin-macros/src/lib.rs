@@ -38,12 +38,12 @@ struct Options {
 ///
 /// ```ignore
 /// #[zipkin::spanned(name = "shave yaks")]
-/// fn shave_some_yaks(&[Yak]) {
+/// fn shave_some_yaks(yaks: &mut [Yak]) {
 ///     // ...
 /// }
 ///
 /// #[zipkin::spanned(name = "asynchronously shave yaks")]
-/// async fn shave_some_other_yaks(yaks: &[Yak]) {
+/// async fn shave_some_other_yaks(yaks: &mut [Yak]) {
 ///     // ...
 /// }
 ///
@@ -51,12 +51,12 @@ struct Options {
 ///
 /// impl Yak {
 ///     #[zipkin::spanned(name = "shave a yak")]
-///     fn shave(&self) {
+///     fn shave(&mut self) {
 ///         // ...
 ///     }
 ///
 ///     #[zipkin::spanned(name = "asynchronously shave a yak")]
-///     async fn shave_nonblocking(&self) {
+///     async fn shave_nonblocking(&mut self) {
 ///          // ...
 ///     }
 /// }
