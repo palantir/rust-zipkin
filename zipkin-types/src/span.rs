@@ -169,7 +169,7 @@ impl Span {
     /// not embed variables into the name.
     #[inline]
     pub fn name(&self) -> Option<&str> {
-        self.name.as_ref().map(|s| &**s)
+        self.name.as_deref()
     }
 
     /// The parent span ID, or `None` if this is the root span in a trace.

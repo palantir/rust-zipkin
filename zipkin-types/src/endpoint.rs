@@ -45,7 +45,7 @@ impl Endpoint {
     /// Returns the name of the service at this endpoint.
     #[inline]
     pub fn service_name(&self) -> Option<&str> {
-        self.service_name.as_ref().map(|s| &**s)
+        self.service_name.as_deref()
     }
 
     /// Returns the IPv4 address of the service at this endpoint.
