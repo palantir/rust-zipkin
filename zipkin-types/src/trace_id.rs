@@ -141,7 +141,7 @@ pub struct TraceIdParseError(Option<DecodeError>);
 
 impl fmt::Display for TraceIdParseError {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(fmt, "{}: ", self.description())?;
+        fmt.write_str("error parsing trace ID: ")?;
         match self.0 {
             Some(ref err) => write!(fmt, "{}", err),
             None => fmt.write_str("invalid length"),
