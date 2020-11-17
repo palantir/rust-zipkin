@@ -24,6 +24,7 @@ use std::time::{Duration, SystemTime};
 #[derive(Debug, Copy, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "SCREAMING_SNAKE_CASE"))]
+#[non_exhaustive]
 pub enum Kind {
     /// The client side of an RPC.
     ///
@@ -53,10 +54,6 @@ pub enum Kind {
     ///     backlog.
     /// * Remote Endpoint - Represents the broker.
     Consumer,
-
-    #[doc(hidden)]
-    #[cfg_attr(feature = "serde", serde(skip_serializing, skip_deserializing))]
-    __NonExhaustive,
 }
 
 /// A `Span` represents a single operation over some range of time.
