@@ -24,6 +24,7 @@ use std::time::{Duration, SystemTime};
 #[derive(Debug, Copy, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "SCREAMING_SNAKE_CASE"))]
+#[non_exhaustive]
 pub enum Kind {
     /// The client side of an RPC.
     ///
@@ -53,10 +54,6 @@ pub enum Kind {
     ///     backlog.
     /// * Remote Endpoint - Represents the broker.
     Consumer,
-
-    #[doc(hidden)]
-    #[cfg_attr(feature = "serde", serde(skip_serializing, skip_deserializing))]
-    __NonExhaustive,
 }
 
 /// A `Span` represents a single operation over some range of time.
@@ -172,7 +169,7 @@ impl Span {
     /// not embed variables into the name.
     #[inline]
     pub fn name(&self) -> Option<&str> {
-        self.name.as_ref().map(|s| &**s)
+        self.name.as_deref()
     }
 
     /// The parent span ID, or `None` if this is the root span in a trace.

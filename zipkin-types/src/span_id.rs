@@ -118,7 +118,7 @@ pub struct SpanIdParseError(Option<DecodeError>);
 
 impl fmt::Display for SpanIdParseError {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(fmt, "{}: ", self.description())?;
+        fmt.write_str("error parsing span: ")?;
         match self.0 {
             Some(ref err) => write!(fmt, "{}", err),
             None => fmt.write_str("invalid length"),
