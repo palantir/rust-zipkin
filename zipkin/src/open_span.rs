@@ -185,7 +185,10 @@ impl OpenSpan<Detached> {
     where
         F: Future,
     {
-        Bind { span: self, future }
+        Bind {
+            span: Some(self),
+            future,
+        }
     }
 }
 
@@ -193,9 +196,9 @@ pin_project! {
     /// A type which wraps a future, associating it with an `OpenSpan`.
     ///
     /// The span's context will be set as the current whenever it's polled, and the span will close
-    /// when the future is dropped.
+    /// when the future completes.
     pub struct Bind<T> {
-        span: OpenSpan<Detached>,
+        span: Option<OpenSpan<Detached>>,
         #[pin]
         future: T,
     }
@@ -209,7 +212,18 @@ where
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let this = self.project();
-        let _guard = crate::set_current(this.span.context());
-        this.future.poll(cx)
+        let _guard = crate::set_current(
+            this.span
+                .as_ref()
+                .expect("future polled after completion")
+                .context(),
+        );
+
+        let r = this.future.poll(cx);
+        if r.is_ready() {
+            *this.span = None;
+        }
+
+        r
     }
 }
