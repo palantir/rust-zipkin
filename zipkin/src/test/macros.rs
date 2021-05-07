@@ -15,7 +15,11 @@ use crate as zipkin; // hack to get the macro codegen to work in the same crate
 use crate::{spanned, test};
 use futures::executor;
 
-fn is_send<T>(_: T) where T: Send {}
+fn is_send<T>(_: T)
+where
+    T: Send,
+{
+}
 
 #[test]
 fn blocking_free_function() {
