@@ -15,6 +15,8 @@ use crate as zipkin; // hack to get the macro codegen to work in the same crate
 use crate::{spanned, test};
 use futures::executor;
 
+fn is_send<T>(_: T) where T: Send {}
+
 #[test]
 fn blocking_free_function() {
     #[spanned(name = "foobar")]
@@ -105,6 +107,8 @@ fn async_free_function() {
         zipkin::next_span().with_name("fizzbuzz");
     }
 
+    is_send(foo());
+
     test::init();
 
     let future = zipkin::next_span().with_name("root").detach().bind(foo());
@@ -132,6 +136,8 @@ fn async_associated_function() {
             zipkin::next_span().with_name("fizzbuzz");
         }
     }
+
+    is_send(Foo::foo());
 
     test::init();
 
@@ -163,6 +169,8 @@ fn async_method() {
             zipkin::next_span().with_name("fizzbuzz");
         }
     }
+
+    is_send(Foo.foo());
 
     test::init();
 

@@ -75,14 +75,20 @@ fn spanned_impl(args: AttributeArgs, mut func: ImplItemMethod) -> Result<TokenSt
 
     if func.sig.asyncness.is_some() {
         let stmts = &func.block.stmts;
-        let stmt = quote! {
-            zipkin::next_span()
+        func.block.stmts = vec![
+            syn::parse2(quote! {
+            let __macro_impl_span = zipkin::next_span()
                 .with_name(#name)
-                .detach()
-                .bind(async move { #(#stmts)* })
-                .await
-        };
-        func.block.stmts = vec![Stmt::Expr(syn::parse2(stmt).unwrap())];
+                .detach();
+            })
+            .unwrap(),
+            Stmt::Expr(
+                syn::parse2(quote! {
+                    __macro_impl_span.bind(async move { #(#stmts)* }).await
+                })
+                .unwrap(),
+            ),
+        ];
     } else {
         let stmt = quote! {
             let __macro_impl_span = zipkin::next_span().with_name(#name);
