@@ -38,7 +38,7 @@ fn init() {
 }
 
 fn take() -> Vec<Span> {
-    SPANS.with(|s| mem::replace(&mut *s.borrow_mut(), vec![]))
+    SPANS.with(|s| mem::take(&mut *s.borrow_mut()))
 }
 
 #[test]
