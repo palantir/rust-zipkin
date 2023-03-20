@@ -19,13 +19,9 @@ extern crate proc_macro;
 use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::{quote, ToTokens};
-use syn::{
-    parse_macro_input, AttributeArgs, Error, ImplItemMethod, Lit, LitStr, Meta, NestedMeta, Stmt,
-};
-
-struct Options {
-    name: LitStr,
-}
+use syn::parse::{Parse, ParseStream};
+use syn::punctuated::Punctuated;
+use syn::{parse_macro_input, Error, Expr, ImplItemFn, Lit, LitStr, Meta, Stmt, Token};
 
 /// Wraps the execution of a function or method in a span.
 ///
@@ -63,23 +59,22 @@ struct Options {
 /// ```
 #[proc_macro_attribute]
 pub fn spanned(args: TokenStream, item: TokenStream) -> TokenStream {
-    let args = parse_macro_input!(args as AttributeArgs);
-    let func = parse_macro_input!(item as ImplItemMethod);
+    let options = parse_macro_input!(args as Options);
+    let func = parse_macro_input!(item as ImplItemFn);
 
-    spanned_impl(args, func).unwrap_or_else(|e| e.to_compile_error().into())
+    spanned_impl(options, func).unwrap_or_else(|e| e.to_compile_error().into())
 }
 
-fn spanned_impl(args: AttributeArgs, mut func: ImplItemMethod) -> Result<TokenStream, Error> {
-    let options = parse_options(args)?;
+fn spanned_impl(options: Options, mut func: ImplItemFn) -> Result<TokenStream, Error> {
     let name = &options.name;
 
     if func.sig.asyncness.is_some() {
         let stmts = &func.block.stmts;
         func.block.stmts = vec![
             syn::parse2(quote! {
-            let __macro_impl_span = zipkin::next_span()
-                .with_name(#name)
-                .detach();
+                let __macro_impl_span = zipkin::next_span()
+                    .with_name(#name)
+                    .detach();
             })
             .unwrap(),
             Stmt::Expr(
@@ -87,6 +82,7 @@ fn spanned_impl(args: AttributeArgs, mut func: ImplItemMethod) -> Result<TokenSt
                     __macro_impl_span.bind(async move { #(#stmts)* }).await
                 })
                 .unwrap(),
+                None,
             ),
         ];
     } else {
@@ -99,31 +95,37 @@ fn spanned_impl(args: AttributeArgs, mut func: ImplItemMethod) -> Result<TokenSt
     Ok(func.into_token_stream().into())
 }
 
-fn parse_options(args: AttributeArgs) -> Result<Options, Error> {
-    let mut name = None;
+struct Options {
+    name: LitStr,
+}
 
-    for arg in args {
-        let meta = match arg {
-            NestedMeta::Meta(meta) => meta,
-            NestedMeta::Lit(lit) => {
-                return Err(Error::new_spanned(&lit, "invalid attribute syntax"))
-            }
-        };
+impl Parse for Options {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let args = Punctuated::<Meta, Token![,]>::parse_terminated(input)?;
 
-        if meta.path().is_ident("name") {
-            match meta {
-                Meta::NameValue(meta) => match meta.lit {
-                    Lit::Str(lit) => name = Some(lit),
-                    lit => return Err(Error::new_spanned(&lit, "expected a string literal")),
-                },
-                _ => return Err(Error::new_spanned(meta, "expected `name = \"...\"`")),
+        let mut name = None;
+
+        for arg in args {
+            let meta = match arg {
+                Meta::NameValue(meta) => meta,
+                _ => return Err(Error::new_spanned(&arg, "invalid attribute syntax")),
+            };
+
+            if meta.path.is_ident("name") {
+                match meta.value {
+                    Expr::Lit(lit) => match lit.lit {
+                        Lit::Str(lit) => name = Some(lit),
+                        lit => return Err(Error::new_spanned(&lit, "expected a string literal")),
+                    },
+                    _ => return Err(Error::new_spanned(meta, "expected `name = \"...\"`")),
+                }
+            } else {
+                return Err(Error::new_spanned(meta.path, "unknown option"));
             }
-        } else {
-            return Err(Error::new_spanned(meta.path(), "unknown option"));
         }
-    }
 
-    Ok(Options {
-        name: name.ok_or_else(|| Error::new(Span::call_site(), "missing `name` option"))?,
-    })
+        Ok(Options {
+            name: name.ok_or_else(|| Error::new(Span::call_site(), "missing `name` option"))?,
+        })
+    }
 }

@@ -76,7 +76,7 @@ impl RandomSampler {
     ///
     /// Panics if `rate` is less than 0 or greater than 1.
     pub fn new(rate: f32) -> RandomSampler {
-        assert!(rate >= 0. && rate <= 1.);
+        assert!((0. ..=1.).contains(&rate));
         RandomSampler { rate }
     }
 }
