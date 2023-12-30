@@ -11,5 +11,5 @@ categories = ["web-programming"]
 keywords = ["zipkin", "tracing"]
 
 [dependencies]
-http = "0.2"
+http = "1.0"
 zipkin = { version = "0.4", path = "../zipkin" }
