@@ -1,6 +1,6 @@
 [package]
 name = "http-zipkin"
-version = "0.3.0"
+version = "0.4.0"
 authors = ["Steven Fackler <sfackler@palantir.com>"]
 edition = "2018"
 license = "Apache-2.0"
