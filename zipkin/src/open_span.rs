@@ -7,7 +7,9 @@ use std::task::{Context, Poll};
 use std::time::Instant;
 
 /// A type indicating that an `OpenSpan` is "attached" to the current thread.
-pub struct Attached(CurrentGuard);
+pub struct Attached {
+    _guard: CurrentGuard,
+}
 
 /// A type indicating that an `OpenSpan` is "detached" from the current thread.
 pub struct Detached(());
@@ -146,7 +148,9 @@ impl OpenSpan<Attached> {
     #[inline]
     pub(crate) fn new(context: TraceContext, state: SpanState) -> OpenSpan<Attached> {
         OpenSpan {
-            _mode: Attached(crate::set_current(context)),
+            _mode: Attached {
+                _guard: crate::set_current(context),
+            },
             context,
             state,
         }
@@ -169,7 +173,9 @@ impl OpenSpan<Detached> {
     #[inline]
     pub fn attach(mut self) -> OpenSpan<Attached> {
         OpenSpan {
-            _mode: Attached(crate::set_current(self.context)),
+            _mode: Attached {
+                _guard: crate::set_current(self.context),
+            },
             context: self.context,
             // since we've swapped in Nop here, self's Drop impl won't do anything
             state: mem::replace(&mut self.state, SpanState::Nop),

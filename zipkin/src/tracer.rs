@@ -113,7 +113,7 @@ pub fn next_span() -> OpenSpan<Attached> {
 
 fn next_id() -> [u8; 8] {
     let mut id = [0; 8];
-    rand::thread_rng().fill(&mut id);
+    rand::rng().fill(&mut id);
     id
 }
 

@@ -21,7 +21,7 @@ use std::mem;
 mod macros;
 
 thread_local! {
-    static SPANS: RefCell<Vec<Span>> = RefCell::new(vec![]);
+    static SPANS: RefCell<Vec<Span>> = const { RefCell::new(vec![]) };
 }
 
 struct TestReporter;
