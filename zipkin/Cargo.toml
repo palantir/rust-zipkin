@@ -1,6 +1,6 @@
 [package]
 name = "zipkin"
-version = "0.4.2"
+version.workspace = true
 authors = ["Steven Fackler <sfackler@palantir.com>"]
 edition = "2018"
 license = "Apache-2.0"
@@ -23,8 +23,8 @@ lazycell = "1.0"
 pin-project-lite = "0.2"
 rand = "0.9"
 
-zipkin-macros = { version = "0.1.0", optional = true, path = "../zipkin-macros" }
-zipkin-types = { version = "0.1.0", path = "../zipkin-types" }
+zipkin-macros = { version = "0.4.2", optional = true, path = "../zipkin-macros" }
+zipkin-types = { version = "0.4.2", path = "../zipkin-types" }
 
 [dev-dependencies]
 futures = "0.3"

@@ -1,6 +1,6 @@
 [package]
 name = "zipkin-types"
-version = "0.1.0"
+version.workspace = true
 authors = ["Steven Fackler <sfackler@palantir.com>"]
 edition = "2018"
 license = "Apache-2.0"
