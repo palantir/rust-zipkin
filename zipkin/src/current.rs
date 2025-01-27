@@ -3,7 +3,7 @@ use std::cell::Cell;
 use std::marker::PhantomData;
 
 thread_local! {
-    static CURRENT: Cell<Option<TraceContext>> = Cell::new(None);
+    static CURRENT: Cell<Option<TraceContext>> = const { Cell::new(None) };
 }
 
 /// A guard object for the thread-local current trace context.
