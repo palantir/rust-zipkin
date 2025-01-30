@@ -12,4 +12,4 @@ keywords = ["zipkin", "tracing"]
 
 [dependencies]
 http = "1.0"
-zipkin = { version = "0.4.2", path = "../zipkin" }
+zipkin = { version = "1.0.0", path = "../zipkin" }
