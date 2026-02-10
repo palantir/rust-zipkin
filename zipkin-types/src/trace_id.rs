@@ -34,7 +34,7 @@ pub struct TraceId(Inner);
 impl fmt::Display for TraceId {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         for b in self.bytes() {
-            write!(fmt, "{:02x}", b)?;
+            write!(fmt, "{b:02x}")?;
         }
         Ok(())
     }
@@ -143,7 +143,7 @@ impl fmt::Display for TraceIdParseError {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt.write_str("error parsing trace ID: ")?;
         match self.0 {
-            Some(ref err) => write!(fmt, "{}", err),
+            Some(ref err) => write!(fmt, "{err}"),
             None => fmt.write_str("invalid length"),
         }
     }

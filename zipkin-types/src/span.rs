@@ -51,7 +51,7 @@ pub enum Kind {
     ///
     /// * Timestamp - The moment a message was received from an origin (formerly "mr")
     /// * Duration - When present, represents the delay consuming the message, such as from a
-    ///     backlog.
+    ///   backlog.
     /// * Remote Endpoint - Represents the broker.
     Consumer,
 }
