@@ -23,8 +23,8 @@ lazycell = "1.0"
 pin-project-lite = "0.2"
 rand = "0.10"
 
-zipkin-macros = { version = "1.0.0", optional = true, path = "../zipkin-macros" }
-zipkin-types = { version = "1.0.0", path = "../zipkin-types" }
+zipkin-macros = { version = "1.1.0", optional = true, path = "../zipkin-macros" }
+zipkin-types = { version = "1.1.0", path = "../zipkin-types" }
 
 [dev-dependencies]
 futures = "0.3"
