@@ -120,7 +120,7 @@ pub fn set_trace_context_single(context: TraceContext, headers: &mut HeaderMap) 
         value.push_str("-0");
     }
     if let Some(parent_id) = context.parent_id() {
-        write!(value, "-{}", parent_id).unwrap();
+        write!(value, "-{parent_id}").unwrap();
     }
     headers.insert(B3, HeaderValue::from_str(&value).unwrap());
 }

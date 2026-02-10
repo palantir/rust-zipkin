@@ -19,7 +19,7 @@ use crate::{
     TraceContext, TraceId,
 };
 use lazycell::AtomicLazyCell;
-use rand::Rng;
+use rand::RngExt;
 use std::error::Error;
 use std::fmt;
 use std::time::{Instant, SystemTime};
