@@ -1,3 +1,7 @@
+<p align="right">
+<a href="https://autorelease.general.dmz.palantir.tech/palantir/rust-zipkin"><img src="https://img.shields.io/badge/Perform%20an-Autorelease-success.svg" alt="Autorelease"></a>
+</p>
+
 # rust-zipkin
 
 [![CircleCI](https://circleci.com/gh/palantir/rust-zipkin.svg?style=shield)](https://circleci.com/gh/palantir/rust-zipkin)
