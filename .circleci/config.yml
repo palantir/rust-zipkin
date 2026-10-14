@@ -18,7 +18,7 @@ save_deps: &SAVE_DEPS
     - target
     - /usr/local/cargo/registry/cache
 
-version: 2
+version: 2.1
 jobs:
   build:
     docker:
