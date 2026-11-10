@@ -57,6 +57,10 @@ use syn::{parse_macro_input, Error, Expr, ImplItemFn, Lit, LitStr, Meta, Stmt, T
 ///     }
 /// }
 /// ```
+///
+/// The span of an `async` function is created when it is first polled rather than when it is called, so a future
+/// passed to e.g. `tokio::spawn` will start a new trace unless it is wrapped with
+/// `zipkin::next_span().detach().bind(future)`.
 #[proc_macro_attribute]
 pub fn spanned(args: TokenStream, item: TokenStream) -> TokenStream {
     let options = parse_macro_input!(args as Options);

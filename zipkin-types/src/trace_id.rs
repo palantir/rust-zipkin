@@ -33,10 +33,7 @@ pub struct TraceId(Inner);
 
 impl fmt::Display for TraceId {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for b in self.bytes() {
-            write!(fmt, "{b:02x}")?;
-        }
-        Ok(())
+        fmt.write_str(crate::encode_hex(self.bytes(), &mut [0; 32]))
     }
 }
 
@@ -78,7 +75,7 @@ mod serde {
         where
             S: Serializer,
         {
-            s.collect_str(self)
+            s.serialize_str(crate::encode_hex(self.bytes(), &mut [0; 32]))
         }
     }
 

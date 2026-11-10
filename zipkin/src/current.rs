@@ -9,6 +9,9 @@ thread_local! {
 /// A guard object for the thread-local current trace context.
 ///
 /// It will restore the previous trace context when it drops.
+///
+/// Guards (including attached `OpenSpan`s) should be dropped in the reverse order they were
+/// created. Otherwise, a context whose guard has already been dropped can become current again.
 pub struct CurrentGuard {
     prev: Option<TraceContext>,
     // make sure this type is !Send since it pokes at thread locals

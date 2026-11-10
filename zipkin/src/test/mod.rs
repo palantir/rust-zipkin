@@ -12,7 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 use crate::sample::AlwaysSampler;
-use crate::{Endpoint, Report, Span};
+use crate::{Endpoint, Report, SamplingFlags, Span};
 use futures::executor;
 use std::cell::RefCell;
 use std::mem;
@@ -108,4 +108,19 @@ fn bind() {
     assert_eq!(spans[1].parent_id(), None);
     assert_eq!(spans[2].id(), other_root_context.span_id());
     assert_eq!(spans[2].parent_id(), None);
+}
+
+#[test]
+fn debug_flag_reported() {
+    init();
+
+    let flags = SamplingFlags::builder().debug(true).build();
+    let root = crate::new_trace_from(flags);
+    let child = crate::next_span();
+    drop(child);
+    drop(root);
+
+    let spans = take();
+    assert_eq!(spans.len(), 2);
+    assert!(spans.iter().all(|s| s.debug()));
 }

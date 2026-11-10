@@ -16,17 +16,17 @@
 #![doc(html_root_url = "https://docs.rs/http-zipkin/0.3")]
 #![warn(missing_docs)]
 
-use http::header::{HeaderMap, HeaderValue};
+use http::header::{HeaderMap, HeaderName, HeaderValue};
 use std::fmt::Write;
 use std::str::FromStr;
 use zipkin::{SamplingFlags, TraceContext};
 
-const X_B3_SAMPLED: &str = "X-B3-Sampled";
-const X_B3_FLAGS: &str = "X-B3-Flags";
-const X_B3_TRACEID: &str = "X-B3-TraceId";
-const X_B3_PARENTSPANID: &str = "X-B3-ParentSpanId";
-const X_B3_SPANID: &str = "X-B3-SpanId";
-const B3: &str = "b3";
+const X_B3_SAMPLED: HeaderName = HeaderName::from_static("x-b3-sampled");
+const X_B3_FLAGS: HeaderName = HeaderName::from_static("x-b3-flags");
+const X_B3_TRACEID: HeaderName = HeaderName::from_static("x-b3-traceid");
+const X_B3_PARENTSPANID: HeaderName = HeaderName::from_static("x-b3-parentspanid");
+const X_B3_SPANID: HeaderName = HeaderName::from_static("x-b3-spanid");
+const B3: HeaderName = HeaderName::from_static("b3");
 
 /// Serializes sampling flags into the `b3` HTTP header.
 ///
@@ -91,10 +91,8 @@ fn get_sampling_flags_single(value: &HeaderValue) -> SamplingFlags {
 fn get_sampling_flags_multi(headers: &HeaderMap) -> SamplingFlags {
     let mut builder = SamplingFlags::builder();
 
-    if let Some(flags) = headers.get(X_B3_FLAGS) {
-        if flags == "1" {
-            builder.debug(true);
-        }
+    if headers.get(X_B3_FLAGS).is_some_and(|f| f == "1") {
+        builder.debug(true);
     } else if let Some(sampled) = headers.get(X_B3_SAMPLED) {
         if sampled == "1" {
             builder.sampled(true);
@@ -126,7 +124,11 @@ pub fn set_trace_context_single(context: TraceContext, headers: &mut HeaderMap) 
 }
 
 /// Serializes a trace context into a set of HTTP headers.
+///
+/// Any existing `b3` header is removed, since it would take precedence over the `X-B3-` headers. To send both
+/// forms, call the `_single` variant after this function.
 pub fn set_trace_context(context: TraceContext, headers: &mut HeaderMap) {
+    headers.remove(B3);
     set_sampling_flags(context.sampling_flags(), headers);
 
     headers.insert(
@@ -209,7 +211,7 @@ fn get_trace_context_multi(headers: &HeaderMap) -> Option<TraceContext> {
     Some(builder.build())
 }
 
-fn parse_header<T>(headers: &HeaderMap, name: &str) -> Option<T>
+fn parse_header<T>(headers: &HeaderMap, name: HeaderName) -> Option<T>
 where
     T: FromStr,
 {
@@ -427,5 +429,33 @@ mod test {
         assert_eq!(headers, expected_headers);
 
         assert_eq!(get_trace_context(&headers), Some(context));
+    }
+
+    #[test]
+    fn set_trace_context_replaces_stale_single() {
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            "b3",
+            HeaderValue::from_static("0000000000000001-0000000000000002-0"),
+        );
+        let context = TraceContext::builder()
+            .trace_id([0, 1, 2, 3, 4, 5, 6, 7].into())
+            .span_id([1, 2, 3, 4, 5, 6, 7, 8].into())
+            .sampled(true)
+            .build();
+        set_trace_context(context, &mut headers);
+
+        assert!(!headers.contains_key("b3"));
+        assert_eq!(get_trace_context(&headers), Some(context));
+    }
+
+    #[test]
+    fn non_debug_flags_do_not_hide_sampled() {
+        let mut headers = HeaderMap::new();
+        headers.insert("X-B3-Flags", HeaderValue::from_static("0"));
+        headers.insert("X-B3-Sampled", HeaderValue::from_static("1"));
+
+        let flags = SamplingFlags::builder().sampled(true).build();
+        assert_eq!(get_sampling_flags(&headers), flags);
     }
 }

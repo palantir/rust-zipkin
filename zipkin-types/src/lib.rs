@@ -42,6 +42,12 @@ pub mod span;
 pub mod span_id;
 pub mod trace_id;
 
+fn encode_hex<'a>(bytes: &[u8], buf: &'a mut [u8; 32]) -> &'a str {
+    let buf = &mut buf[..bytes.len() * 2];
+    data_encoding::HEXLOWER.encode_mut(bytes, buf);
+    std::str::from_utf8(buf).unwrap()
+}
+
 #[cfg(feature = "serde")]
 mod time_micros {
     use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -134,5 +140,32 @@ mod opt_duration_micros {
         D: Deserializer<'de>,
     {
         Option::<u64>::deserialize(d).map(|o| o.map(super::duration_micros::from_wire))
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::{SpanId, TraceId};
+
+    #[test]
+    fn id_display() {
+        let id = TraceId::from([0x00, 0x1f, 0xa0, 0xff, 0x12, 0x34, 0xab, 0xcd]);
+        assert_eq!(id.to_string(), "001fa0ff1234abcd");
+
+        let id = TraceId::from([0xab; 16]);
+        assert_eq!(id.to_string(), "abababababababababababababababab");
+
+        let id = SpanId::from([0x0f, 0xf0, 0, 1, 2, 3, 4, 5]);
+        assert_eq!(id.to_string(), "0ff0000102030405");
+    }
+
+    #[test]
+    #[cfg(feature = "serde")]
+    fn missing_timestamp_and_duration() {
+        let json = r#"{"traceId":"0101010101010101","id":"0202020202020202"}"#;
+        let span = serde_json::from_str::<crate::Span>(json).unwrap();
+        assert_eq!(span.timestamp(), None);
+        assert_eq!(span.duration(), None);
+        assert_eq!(serde_json::to_string(&span).unwrap(), json);
     }
 }

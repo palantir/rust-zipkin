@@ -139,6 +139,7 @@ fn make_span(mut context: TraceContext, mut shared: bool) -> OpenSpan<Attached> 
             span.trace_id(context.trace_id())
                 .id(context.span_id())
                 .timestamp(SystemTime::now())
+                .debug(context.debug())
                 .shared(shared)
                 .local_endpoint(tracer.local_endpoint.clone());
 
