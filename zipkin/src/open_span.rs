@@ -2,6 +2,7 @@ use crate::{span, tracer, Annotation, CurrentGuard, Endpoint, Kind, TraceContext
 use pin_project_lite::pin_project;
 use std::future::Future;
 use std::mem;
+use std::panic::{self, AssertUnwindSafe};
 use std::pin::Pin;
 use std::task::{Context, Poll};
 use std::time::Instant;
@@ -39,6 +40,9 @@ pub(crate) enum SpanState {
 /// each time the thread is polled. If some computation starts executing on one thread and finishes
 /// executing on another, you can detach the span, send it to the other thread, and then reattach
 /// it to properly model that behavior.
+///
+/// Attached spans should not be held across an `.await`, since the thread may run other tasks
+/// while the future is suspended. Use `detach` and `bind` instead.
 pub struct OpenSpan<T> {
     _mode: T,
     context: TraceContext,
@@ -48,13 +52,19 @@ pub struct OpenSpan<T> {
 impl<T> Drop for OpenSpan<T> {
     fn drop(&mut self) {
         if let SpanState::Real {
-            span,
+            mut span,
             start_instant,
-        } = &mut self.state
+        } = mem::replace(&mut self.state, SpanState::Nop)
         {
             if let Some(tracer) = tracer::TRACER.borrow() {
-                let span = span.duration(start_instant.elapsed()).build();
-                tracer.reporter.report(span);
+                span.duration(start_instant.elapsed());
+                let span = span.build_owned();
+                if std::thread::panicking() {
+                    // a second panic while unwinding would abort the process
+                    let _ = panic::catch_unwind(AssertUnwindSafe(|| tracer.reporter.report(span)));
+                } else {
+                    tracer.reporter.report(span);
+                }
             }
         }
     }

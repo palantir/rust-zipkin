@@ -83,6 +83,7 @@ pub struct Span {
     #[cfg_attr(
         feature = "serde",
         serde(
+            default,
             skip_serializing_if = "Option::is_none",
             with = "crate::opt_time_micros"
         )
@@ -91,6 +92,7 @@ pub struct Span {
     #[cfg_attr(
         feature = "serde",
         serde(
+            default,
             skip_serializing_if = "Option::is_none",
             with = "crate::opt_duration_micros"
         )
@@ -438,6 +440,30 @@ impl Builder {
             remote_endpoint: self.remote_endpoint.clone(),
             annotations: self.annotations.clone(),
             tags: self.tags.clone(),
+        }
+    }
+
+    /// Constructs a `Span`, moving the builder's fields instead of cloning them.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `trace_id` or `id` was not set.
+    #[inline]
+    pub fn build_owned(self) -> Span {
+        Span {
+            trace_id: self.trace_id.expect("trace ID not set"),
+            name: self.name,
+            id: self.id.expect("span ID not set"),
+            kind: self.kind,
+            parent_id: self.parent_id,
+            timestamp: self.timestamp,
+            duration: self.duration,
+            debug: self.debug,
+            shared: self.shared,
+            local_endpoint: self.local_endpoint,
+            remote_endpoint: self.remote_endpoint,
+            annotations: self.annotations,
+            tags: self.tags,
         }
     }
 }

@@ -21,6 +21,9 @@ use std::sync::Arc;
 ///
 /// For example, the reporter may log the span information to a file, or send
 /// it over the network to a collection service.
+///
+/// Reporters must not create spans, since a span created and finished inside `report` is itself
+/// reported, recursing indefinitely.
 pub trait Report {
     /// Reports a span.
     fn report(&self, span: Span);
